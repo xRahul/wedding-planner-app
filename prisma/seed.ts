@@ -1,0 +1,1 @@
+// Prisma seed file for sample data

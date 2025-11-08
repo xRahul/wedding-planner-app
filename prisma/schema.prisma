@@ -1,0 +1,188 @@
+// Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model Wedding {
+  id             String   @id @default(cuid())
+  brideFirstName String
+  brideLastName  String
+  groomFirstName String
+  groomLastName  String
+  weddingDate    DateTime
+  venue          String
+  city           String
+  budget         Decimal?
+  currency       String   @default("INR")
+
+  // Relations
+  events       Event[]
+  foodMenus    FoodMenu[]
+  staff        Staff[]
+  guests       Guest[]
+  gifts        Gift[]
+  sangeetItems SangeetItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id        String  @id @default(cuid())
+  weddingId String
+  wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  name        String // Mehendi, Sangeet, Haldi, etc.
+  date        DateTime
+  startTime   String
+  endTime     String
+  venue       String
+  description String?
+  theme       String?
+  budget      Decimal?
+
+  // Groom/Bride entry details
+  brideEntry            Boolean @default(false)
+  brideEntryTime        String?
+  brideEntryDescription String?
+  groomEntry            Boolean @default(false)
+  groomEntryTime        String?
+  groomEntryDescription String?
+
+  staffAssignments Staff[]
+  guestSchedules   GuestSchedule[]
+  foodMenus        FoodMenu[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([weddingId])
+}
+
+model FoodMenu {
+  id        String  @id @default(cuid())
+  weddingId String
+  wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  eventId   String?
+  event     Event?  @relation(fields: [eventId], references: [id])
+
+  name        String // Dish name
+  category    String // Vegetarian, Non-Veg, Dessert, Beverage
+  description String?
+  servingSize String?
+  cost        Decimal?
+  quantity    Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([weddingId])
+}
+
+model Staff {
+  id        String  @id @default(cuid())
+  weddingId String
+  wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  name    String
+  role    String // Caterer, Decorator, Photographer, etc.
+  contact String
+  email   String?
+  cost    Decimal?
+  company String?
+
+  assignedEvents Event[]
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([weddingId])
+}
+
+model Guest {
+  id        String  @id @default(cuid())
+  weddingId String
+  wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  firstName           String
+  lastName            String
+  relationship        String // Family, Friend, Colleague
+  contact             String?
+  email               String?
+  dietaryRequirements String?
+
+  schedules GuestSchedule[]
+  gifts     Gift[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([weddingId])
+}
+
+model GuestSchedule {
+  id      String @id @default(cuid())
+  guestId String
+  guest   Guest  @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  attending           Boolean @default(false)
+  mealPreference      String?
+  specialRequirements String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([guestId, eventId])
+  @@index([guestId])
+  @@index([eventId])
+}
+
+model Gift {
+  id        String  @id @default(cuid())
+  weddingId String
+  wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  guestId   String
+  guest     Guest   @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  description  String
+  value        Decimal?
+  received     Boolean   @default(false)
+  receivedDate DateTime?
+  thankyouSent Boolean   @default(false)
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([weddingId])
+  @@index([guestId])
+}
+
+model SangeetItem {
+  id        String  @id @default(cuid())
+  weddingId String
+  wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  songName          String
+  singer            String // Solo, Group
+  performers        String[] // Array of performer names
+  duration          String // Format: MM:SS
+  choreographyNotes String?
+  costumes          String?
+  musicFile         String? // URL to music file
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([weddingId])
+}
