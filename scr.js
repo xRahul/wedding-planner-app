@@ -4,301 +4,57 @@
         
         const DEFAULT_DATA = {
             weddingInfo: {
-                brideName: "Priya",
-                groomName: "Rahul",
-                weddingDate: "2025-12-15",
-                location: "Bangalore",
-                totalBudget: 2000000
+                brideName: "",
+                groomName: "",
+                weddingDate: "",
+                location: "",
+                totalBudget: 0
             },
-            timeline: [
-                {
-                    dayOffset: -2,
-                    date: "2025-12-13",
-                    events: [
-                        { time: "18:00", ceremony: "Mehendi", description: "Mehendi ceremony at bride's home", vendors: ["mehendi_artist", "decorator"] }
-                    ]
-                },
-                {
-                    dayOffset: -1,
-                    date: "2025-12-14",
-                    events: [
-                        { time: "19:00", ceremony: "Sangeet", description: "Sangeet night with music and dance", vendors: ["dj", "decorator", "caterer"] },
-                        { time: "10:00", ceremony: "Haldi", description: "Haldi ceremony", vendors: ["decorator"] }
-                    ]
-                },
-                {
-                    dayOffset: 0,
-                    date: "2025-12-15",
-                    events: [
-                        { time: "09:00", ceremony: "Shaadi", description: "Wedding ceremony", vendors: ["photographer", "videographer", "decorator", "caterer", "florist"] },
-                        { time: "20:00", ceremony: "Reception", description: "Evening reception", vendors: ["dj", "caterer", "photographer"] }
-                    ]
-                },
-                {
-                    dayOffset: 1,
-                    date: "2025-12-16",
-                    events: [
-                        { time: "11:00", ceremony: "Vidai", description: "Bride's farewell", vendors: ["photographer"] }
-                    ]
-                }
-            ],
-            guests: [
-                { 
-                    id: "g1", 
-                    name: "Amit Sharma", 
-                    category: "family", 
-                    relation: "paternal_uncle",
-                    side: "groom",
-                    gotra: "Kashyap",
-                    phone: "+91-9876543210", 
-                    dietary: "veg", 
-                    rsvpStatus: "yes",
-                    familySize: 4,
-                    arrival: "2025-12-13",
-                    departure: "2025-12-16",
-                    needsAccommodation: true,
-                    needsTransport: true,
-                    specialRequests: "Ground floor room preferred",
-                    ritualsAttending: ["mehendi", "haldi", "wedding", "reception"],
-                    notes: "Uncle from Delhi"
-                },
-                { 
-                    id: "g2", 
-                    name: "Neha Gupta", 
-                    category: "friends", 
-                    relation: "college_friend",
-                    side: "bride",
-                    phone: "+91-9876543211", 
-                    dietary: "non_veg", 
-                    rsvpStatus: "yes",
-                    familySize: 2,
-                    arrival: "2025-12-14",
-                    departure: "2025-12-16",
-                    needsAccommodation: false,
-                    needsTransport: true,
-                    ritualsAttending: ["sangeet", "wedding", "reception"],
-                    notes: "College friend"
-                },
-                { 
-                    id: "g3", 
-                    name: "Rajesh Kumar", 
-                    category: "family", 
-                    relation: "maternal_cousin",
-                    side: "bride",
-                    gotra: "Bharadwaj",
-                    phone: "+91-9876543212", 
-                    dietary: "veg", 
-                    rsvpStatus: "pending",
-                    familySize: 3,
-                    needsAccommodation: true,
-                    needsTransport: true,
-                    ritualsAttending: ["mehendi", "sangeet", "haldi", "wedding", "reception"],
-                    notes: "Cousin from mother's side"
-                }
-            ],
-            vendors: [
-                { id: "v1", type: "photographer", name: "Capture Moments Studio", contact: "+91-9988776655", email: "info@capturemoments.com", cost: 150000, status: "confirmed", notes: "Top-rated photographer" },
-                { id: "v2", type: "caterer", name: "Royal Caterers", contact: "+91-9988776656", email: "contact@royalcaterers.com", cost: 500000, status: "confirmed", notes: "Specializes in North Indian cuisine" },
-                { id: "v3", type: "decorator", name: "Dream Decor", contact: "+91-9988776657", email: "hello@dreamdecor.com", cost: 300000, status: "booked", notes: "Floral specialist" }
-            ],
+            savedGuestCategories: ['family', 'friends', 'relatives', 'family_friends', 'colleagues', 'vendors'],
+            savedGuestRelations: ['maternal_uncle', 'maternal_aunt', 'paternal_uncle', 'paternal_aunt', 'father_sister', 'mother_sister', 'cousin', 'family_friend', 'college_friend', 'work_colleague', 'neighbor'],
+            savedDietaryPreferences: ['veg', 'jain'],
+            timeline: [],
+            guests: [],
+            vendors: [],
             budget: [
-                { category: "venue", planned: 400000, actual: 400000, subcategories: ["mandap", "ceremony_hall", "dining_area"] },
-                { category: "catering", planned: 500000, actual: 500000, subcategories: ["breakfast", "lunch", "dinner", "snacks", "beverages"] },
-                { category: "decor", planned: 300000, actual: 300000, subcategories: ["flowers", "lighting", "stage", "entrance"] },
-                { category: "bride", planned: 300000, actual: 250000, subcategories: ["lehenga", "jewelry", "makeup", "mehendi"] },
-                { category: "groom", planned: 200000, actual: 150000, subcategories: ["sherwani", "accessories", "grooming"] },
-                { category: "pandit_and_rituals", planned: 100000, actual: 80000, subcategories: ["pandit_services", "havan_samagri", "ritual_items"] },
-                { category: "entertainment", planned: 250000, actual: 200000, subcategories: ["dj", "band", "sangeet_performers", "dancers"] },
-                { category: "photography", planned: 300000, actual: 250000, subcategories: ["photos", "videos", "drone", "album"] },
-                { category: "invitations", planned: 100000, actual: 80000, subcategories: ["cards", "boxes", "favors"] },
-                { category: "gifts", planned: 200000, actual: 150000, subcategories: ["family_gifts", "guest_favors", "return_gifts"] },
-                { category: "transport", planned: 150000, actual: 100000, subcategories: ["guest_transport", "baraat", "bride_car"] },
-                { category: "accommodation", planned: 200000, actual: 150000, subcategories: ["family_stay", "guest_rooms", "bride_suite"] },
-                { category: "other", planned: 300000, actual: 200000, subcategories: ["insurance", "permits", "contingency"] }
+                { category: "venue", planned: 0, actual: 0, subcategories: [] },
+                { category: "catering", planned: 0, actual: 0, subcategories: [] },
+                { category: "decor", planned: 0, actual: 0, subcategories: [] },
+                { category: "bride", planned: 0, actual: 0, subcategories: [] },
+                { category: "groom", planned: 0, actual: 0, subcategories: [] },
+                { category: "pandit_and_rituals", planned: 0, actual: 0, subcategories: [] },
+                { category: "entertainment", planned: 0, actual: 0, subcategories: [] },
+                { category: "photography", planned: 0, actual: 0, subcategories: [] },
+                { category: "invitations", planned: 0, actual: 0, subcategories: [] },
+                { category: "gifts", planned: 0, actual: 0, subcategories: [] },
+                { category: "transport", planned: 0, actual: 0, subcategories: [] },
+                { category: "accommodation", planned: 0, actual: 0, subcategories: [] },
+                { category: "other", planned: 0, actual: 0, subcategories: [] }
             ],
-            tasks: [
-                { id: "t1", description: "Book wedding venue", deadline: "2025-11-01", assignedTo: "Rahul", status: "done", priority: "high" },
-                { id: "t2", description: "Send wedding invitations", deadline: "2025-11-15", assignedTo: "Priya", status: "done", priority: "high" },
-                { id: "t3", description: "Finalize guest list", deadline: "2025-11-20", assignedTo: "Both", status: "pending", priority: "high" },
-                { id: "t4", description: "Book honeymoon tickets", deadline: "2025-12-01", assignedTo: "Rahul", status: "pending", priority: "medium" }
-            ],
-            menus: [
-                {
-                    event: "Mehendi",
-                    items: [
-                        { name: "Samosa", quantity: 200 },
-                        { name: "Chai", quantity: 150 },
-                        { name: "Pakoras", quantity: 150 }
-                    ]
-                },
-                {
-                    event: "Sangeet",
-                    items: [
-                        { name: "Paneer Tikka", quantity: 200 },
-                        { name: "Chicken Tikka", quantity: 150 },
-                        { name: "Veg Biryani", quantity: 200 },
-                        { name: "Ice Cream", quantity: 200 }
-                    ]
-                },
-                {
-                    event: "Shaadi",
-                    items: [
-                        { name: "Paneer Butter Masala", quantity: 300 },
-                        { name: "Dal Makhani", quantity: 300 },
-                        { name: "Naan", quantity: 600 },
-                        { name: "Biryani", quantity: 300 },
-                        { name: "Gulab Jamun", quantity: 300 },
-                        { name: "Rasgulla", quantity: 300 }
-                    ]
-                },
-                {
-                    event: "Reception",
-                    items: [
-                        { name: "Welcome Drinks Counter", quantity: 300 },
-                        { name: "Live Chaat Counter", quantity: 250 },
-                        { name: "Pani Puri Counter", quantity: 250 },
-                        { name: "Dosa Counter", quantity: 200 },
-                        { name: "Indian Street Food Station", quantity: 250 },
-                        { name: "Live Grill Counter", quantity: 200 },
-                        { name: "North Indian Main Course", quantity: 300 },
-                        { name: "South Indian Main Course", quantity: 200 },
-                        { name: "Live Tandoor Station", quantity: 250 },
-                        { name: "Oriental Station", quantity: 200 },
-                        { name: "Dessert Bar", quantity: 300 },
-                        { name: "Ice Cream Counter", quantity: 300 },
-                        { name: "Paan Counter", quantity: 300 }
-                    ]
-                }
-            ],
+            tasks: [],
+            menus: [],
             travel: {
-                accommodations: [
-                    { hotel: "Grand Palace Hotel", checkIn: "2025-12-13", checkOut: "2025-12-17", guests: ["Amit Sharma", "Family"] },
-                    { hotel: "Comfort Inn", checkIn: "2025-12-14", checkOut: "2025-12-16", guests: ["Out-of-town friends"] }
-                ],
-                transport: [
-                    { type: "flight", details: "Delhi to Bangalore - AI 502", date: "2025-12-13" },
-                    { type: "car", details: "Wedding venue shuttle service", date: "2025-12-15" }
-                ]
+                accommodations: [],
+                transport: []
             },
             ritualsAndCustoms: {
-                preWedding: [
-                    {
-                        name: "Roka",
-                        description: "The unofficial engagement ceremony",
-                        items: ["Coconut", "Sweets", "Dry Fruits", "Gifts for Exchange"],
-                        participants: ["Bride", "Groom", "Immediate Family"],
-                        status: "completed",
-                        date: "2025-10-15"
-                    }
-                ],
-                mainCeremonies: [
-                    {
-                        name: "Ganesh Puja",
-                        items: ["Ganesh Idol", "Red Cloth", "Flowers", "Sweets", "Puja Items"],
-                        pandits: ["Main Pandit"],
-                        status: "pending",
-                        date: "2025-12-13"
-                    }
-                ],
-                customs: [
-                    {
-                        name: "Joota Chupai",
-                        side: "bride",
-                        participants: ["Bride's Sisters", "Cousins"],
-                        negotiatedAmount: 11000,
-                        status: "planned"
-                    }
-                ]
+                preWedding: [],
+                mainCeremonies: [],
+                customs: []
             },
             giftsAndFavors: {
-                familyGifts: [
-                    {
-                        relation: "maternal_uncle",
-                        traditional: "Pagdi, Shawl",
-                        modern: "Watch",
-                        budget: 25000,
-                        quantity: 2,
-                        status: "pending"
-                    }
-                ],
-                returnGifts: [
-                    {
-                        event: "Reception",
-                        item: "Silver Coin with Box",
-                        quantity: 200,
-                        cost: 1000,
-                        status: "ordered"
-                    }
-                ],
-                specialGifts: [
-                    {
-                        for: "Parents",
-                        items: ["Gold Chain", "Silk Saree", "Watch"],
-                        budget: 200000,
-                        status: "planning"
-                    }
-                ]
+                familyGifts: [],
+                returnGifts: [],
+                specialGifts: []
             },
             shopping: {
-                bride: [
-                    {
-                        event: "Wedding",
-                        items: [
-                            { item: "Bridal Lehenga", budget: 200000, status: "pending", notes: "Red color preferred" },
-                            { item: "Jewelry Set", budget: 500000, status: "pending", notes: "Kundan set" },
-                            { item: "Footwear", budget: 10000, status: "pending" },
-                            { item: "Clutch", budget: 15000, status: "pending" }
-                        ]
-                    }
-                ],
-                groom: [
-                    {
-                        event: "Wedding",
-                        items: [
-                            { item: "Sherwani", budget: 100000, status: "pending", notes: "Cream or Beige" },
-                            { item: "Safa", budget: 10000, status: "pending" },
-                            { item: "Jewelry", budget: 50000, status: "pending", notes: "Including kalgi" }
-                        ]
-                    }
-                ],
-                family: [
-                    {
-                        for: "Mother of Bride",
-                        items: [
-                            { item: "Silk Saree", budget: 50000, status: "pending", notes: "For wedding" },
-                            { item: "Jewelry", budget: 100000, status: "pending" }
-                        ]
-                    }
-                ]
+                bride: [{ event: "Wedding", items: [] }],
+                groom: [{ event: "Wedding", items: [] }],
+                family: [{ for: "Family", items: [] }]
             },
             traditions: {
-                preWedding: [
-                    {
-                        name: "Kalash Purchase",
-                        description: "Buying auspicious items for puja",
-                        requiredItems: [
-                            "Copper/Bronze Kalash",
-                            "Coconut",
-                            "Mango Leaves",
-                            "Red Thread",
-                            "Rice",
-                            "Coins"
-                        ],
-                        responsible: "Bride's Mother",
-                        status: "pending"
-                    }
-                ],
-                ritual_items: [
-                    {
-                        ceremony: "Wedding",
-                        items: [
-                            { item: "Mangalsutra", budget: 100000, status: "pending" },
-                            { item: "Sindoor", budget: 1000, status: "pending" },
-                            { item: "Wedding Garlands", budget: 20000, status: "pending" },
-                            { item: "Havan Samagri", budget: 10000, status: "pending" }
-                        ]
-                    }
-                ]
+                preWedding: [],
+                ritual_items: []
             }
         };
 
@@ -530,7 +286,7 @@
                     <div className="container">
                         {activeTab === 'dashboard' && <Dashboard data={data} />}
                         {activeTab === 'timeline' && <Timeline timeline={data.timeline} updateData={updateData} weddingDate={data.weddingInfo.weddingDate} />}
-                        {activeTab === 'guests' && <Guests guests={data.guests} updateData={updateData} />}
+                        {activeTab === 'guests' && <Guests guests={data.guests} updateData={updateData} data={data} />}
                         {activeTab === 'vendors' && <Vendors vendors={data.vendors} updateData={updateData} />}
                         {activeTab === 'budget' && <Budget budget={data.budget} updateData={updateData} totalBudget={data.weddingInfo.totalBudget} />}
                         {activeTab === 'tasks' && <Tasks tasks={data.tasks} updateData={updateData} />}
@@ -715,12 +471,15 @@
                         time: event.time,
                         ceremony: event.ceremony,
                         description: event.description,
-                        vendors: event.vendors
+                        vendors: event.vendors,
+                        date: event.date
                     });
                 } else {
                     const weddingDateObj = new Date(weddingDate);
-                    const eventDate = new Date(weddingDateObj);
-                    eventDate.setDate(eventDate.getDate() + event.dayOffset);
+                    const eventDate = event.date ? new Date(event.date) : new Date(weddingDateObj);
+                    if (!event.date) {
+                        eventDate.setDate(eventDate.getDate() + event.dayOffset);
+                    }
                     
                     updatedTimeline.push({
                         dayOffset: event.dayOffset,
@@ -729,7 +488,8 @@
                             time: event.time,
                             ceremony: event.ceremony,
                             description: event.description,
-                            vendors: event.vendors
+                            vendors: event.vendors,
+                            date: event.date
                         }]
                     });
                 }
@@ -775,7 +535,7 @@
                                                 <div>
                                                     <strong style={{ fontSize: '16px' }}>{event.ceremony}</strong>
                                                     <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                                        🕐 {event.time}
+                                                        {event.date && `📅 ${formatDate(event.date)} • `}🕐 {event.time}
                                                     </div>
                                                 </div>
                                                 <button 
@@ -869,6 +629,15 @@
                                 </select>
                             </div>
                             <div className="form-group">
+                                <label className="form-label">Date</label>
+                                <input 
+                                    type="date"
+                                    className="form-input"
+                                    value={formData.date || ''}
+                                    onChange={e => setFormData({ ...formData, date: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label className="form-label">Time</label>
                                 <input 
                                     type="time"
@@ -912,10 +681,28 @@
 
         // ==================== GUESTS COMPONENT ====================
 
-        const Guests = ({ guests, updateData }) => {
+        const Guests = ({ guests, updateData, data }) => {
             const [showModal, setShowModal] = useState(false);
             const [editingGuest, setEditingGuest] = useState(null);
             const [filter, setFilter] = useState('all');
+            const [savedCategories, setSavedCategories] = useState(data.savedGuestCategories || []);
+            const [savedRelations, setSavedRelations] = useState(data.savedGuestRelations || []);
+            const [savedDietary, setSavedDietary] = useState(data.savedDietaryPreferences || []);
+
+            const handleUpdateCategories = (newCategories) => {
+                setSavedCategories(newCategories);
+                updateData('savedGuestCategories', newCategories);
+            };
+
+            const handleUpdateRelations = (newRelations) => {
+                setSavedRelations(newRelations);
+                updateData('savedGuestRelations', newRelations);
+            };
+
+            const handleUpdateDietary = (newDietary) => {
+                setSavedDietary(newDietary);
+                updateData('savedDietaryPreferences', newDietary);
+            };
 
             const filteredGuests = useMemo(() => {
                 if (filter === 'all') return guests;
@@ -1035,14 +822,111 @@
                             guest={editingGuest}
                             onSave={handleSave}
                             onClose={() => { setShowModal(false); setEditingGuest(null); }}
+                            savedCategories={savedCategories}
+                            savedRelations={savedRelations}
+                            savedDietary={savedDietary}
+                            onUpdateCategories={handleUpdateCategories}
+                            onUpdateRelations={handleUpdateRelations}
+                            onUpdateDietary={handleUpdateDietary}
                         />
                     )}
                 </div>
             );
         };
 
-        const GuestModal = ({ guest, onSave, onClose }) => {
+        // Reusable SelectOrAdd component
+        const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
+            const [isAdding, setIsAdding] = useState(false);
+            const [newValue, setNewValue] = useState('');
+
+            const handleAdd = () => {
+                if (newValue.trim()) {
+                    onChange(newValue.trim());
+                    setNewValue('');
+                    setIsAdding(false);
+                }
+            };
+
+            return (
+                <div className="form-group">
+                    <label className="form-label">{label}</label>
+                    {!isAdding ? (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <select 
+                                className="form-select"
+                                value={value}
+                                onChange={e => onChange(e.target.value)}
+                                style={{ flex: 1 }}
+                            >
+                                <option value="">Select {label}</option>
+                                {options.map(opt => (
+                                    <option key={opt} value={opt}>
+                                        {opt.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                    </option>
+                                ))}
+                            </select>
+                            <button 
+                                type="button"
+                                className="btn btn-outline btn-small"
+                                onClick={() => setIsAdding(true)}
+                            >
+                                + Add New
+                            </button>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input 
+                                type="text"
+                                className="form-input"
+                                value={newValue}
+                                onChange={e => setNewValue(e.target.value)}
+                                placeholder={placeholder || `Enter new ${label.toLowerCase()}`}
+                                style={{ flex: 1 }}
+                                onKeyPress={e => e.key === 'Enter' && handleAdd()}
+                            />
+                            <button 
+                                type="button"
+                                className="btn btn-primary btn-small"
+                                onClick={handleAdd}
+                            >
+                                Add
+                            </button>
+                            <button 
+                                type="button"
+                                className="btn btn-outline btn-small"
+                                onClick={() => { setIsAdding(false); setNewValue(''); }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const GuestModal = ({ guest, onSave, onClose, savedCategories, savedRelations, savedDietary, onUpdateCategories, onUpdateRelations, onUpdateDietary }) => {
             const [formData, setFormData] = useState(guest);
+
+            const handleCategoryChange = (newCategory) => {
+                setFormData({ ...formData, category: newCategory });
+                if (!savedCategories.includes(newCategory)) {
+                    onUpdateCategories([...savedCategories, newCategory]);
+                }
+            };
+
+            const handleRelationChange = (newRelation) => {
+                setFormData({ ...formData, relation: newRelation });
+                if (!savedRelations.includes(newRelation)) {
+                    onUpdateRelations([...savedRelations, newRelation]);
+                }
+            };
+
+            const handleDietaryChange = (newDietary) => {
+                setFormData({ ...formData, dietary: newDietary });
+                if (!savedDietary.includes(newDietary)) {
+                    onUpdateDietary([...savedDietary, newDietary]);
+                }
+            };
 
             return (
                 <div className="modal-overlay" onClick={onClose}>
@@ -1062,21 +946,13 @@
                                     required
                                 />
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Category</label>
-                                <select 
-                                    className="form-select"
-                                    value={formData.category}
-                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                >
-                                    <option value="family">Family</option>
-                                    <option value="friends">Friends</option>
-                                    <option value="relatives">Relatives</option>
-                                    <option value="family_friends">Family Friends</option>
-                                    <option value="colleagues">Colleagues</option>
-                                    <option value="vendors">Vendors</option>
-                                </select>
-                            </div>
+                            <SelectOrAddField
+                                label="Category"
+                                value={formData.category}
+                                onChange={handleCategoryChange}
+                                options={savedCategories}
+                                placeholder="Enter custom category"
+                            />
                             <div className="form-group">
                                 <label className="form-label">Side</label>
                                 <select 
@@ -1088,30 +964,13 @@
                                     <option value="groom">Groom's Side</option>
                                 </select>
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Relation</label>
-                                <select 
-                                    className="form-select"
-                                    value={formData.relation}
-                                    onChange={e => setFormData({ ...formData, relation: e.target.value })}
-                                >
-                                    <optgroup label="Family">
-                                        <option value="maternal_uncle">Maternal Uncle (Mama)</option>
-                                        <option value="maternal_aunt">Maternal Aunt (Mami)</option>
-                                        <option value="paternal_uncle">Paternal Uncle (Chacha)</option>
-                                        <option value="paternal_aunt">Paternal Aunt (Chachi)</option>
-                                        <option value="father_sister">Father's Sister (Bua)</option>
-                                        <option value="mother_sister">Mother's Sister (Mausi)</option>
-                                        <option value="cousin">Cousin</option>
-                                    </optgroup>
-                                    <optgroup label="Others">
-                                        <option value="family_friend">Family Friend</option>
-                                        <option value="college_friend">College Friend</option>
-                                        <option value="work_colleague">Work Colleague</option>
-                                        <option value="neighbor">Neighbor</option>
-                                    </optgroup>
-                                </select>
-                            </div>
+                            <SelectOrAddField
+                                label="Relation"
+                                value={formData.relation}
+                                onChange={handleRelationChange}
+                                options={savedRelations}
+                                placeholder="Enter custom relation"
+                            />
                             <div className="form-group">
                                 <label className="form-label">Gotra (if applicable)</label>
                                 <input 
@@ -1130,19 +989,13 @@
                                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                 />
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Dietary Preference</label>
-                                <select 
-                                    className="form-select"
-                                    value={formData.dietary}
-                                    onChange={e => setFormData({ ...formData, dietary: e.target.value })}
-                                >
-                                    <option value="veg">Veg</option>
-                                    <option value="non_veg">Non-Veg</option>
-                                    <option value="vegan">Vegan</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
+                            <SelectOrAddField
+                                label="Dietary Preference"
+                                value={formData.dietary}
+                                onChange={handleDietaryChange}
+                                options={savedDietary}
+                                placeholder="Enter custom dietary preference"
+                            />
                             <div className="form-group">
                                 <label className="form-label">RSVP Status</label>
                                 <select 
@@ -2626,7 +2479,7 @@
                 URL.revokeObjectURL(url);
             };
 
-            const handleImport = (event) => {
+            const handleImport = async (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
 
@@ -2636,10 +2489,12 @@
                 }
 
                 const reader = new FileReader();
-                reader.onload = (e) => {
+                reader.onload = async (e) => {
                     try {
                         const importedData = JSON.parse(e.target.result);
+                        await saveData(importedData);
                         setData(importedData);
+                        setFormData(importedData.weddingInfo);
                         alert('Data imported successfully!');
                     } catch (error) {
                         alert('Error importing data. Please check the file format.');
@@ -2650,9 +2505,12 @@
                 reader.readAsText(file);
             };
 
-            const handleReset = () => {
+            const handleReset = async () => {
                 if (confirm('This will reset all data to default values. This action cannot be undone. Are you sure?')) {
-                    setData(DEFAULT_DATA);
+                    const resetData = { ...DEFAULT_DATA };
+                    await saveData(resetData);
+                    setData(resetData);
+                    setFormData(resetData.weddingInfo);
                     alert('Data has been reset to defaults.');
                 }
             };
