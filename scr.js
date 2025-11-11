@@ -2323,10 +2323,10 @@
             const [showItemModal, setShowItemModal] = useState(false);
             const [editingEvent, setEditingEvent] = useState(null);
             const [editingItem, setEditingItem] = useState(null);
-            const [selectedEventId, setSelectedEventId] = useState(null);
+            const [currentEventId, setCurrentEventId] = useState(null);
 
             const handleAddEvent = () => {
-                setEditingEvent({ id: generateId(), name: '', guestsBooked: 0, guestsAttended: 0, items: [] });
+                setEditingEvent({ id: generateId(), name: '', expectedGuests: 0, attendedGuests: 0, items: [] });
                 setShowEventModal(true);
             };
 
@@ -2340,6 +2340,7 @@
                     alert('Event name is required.');
                     return;
                 }
+                if (!event.items) event.items = [];
                 const updatedMenus = [...menus];
                 const idx = updatedMenus.findIndex(m => m.id === event.id);
                 if (idx >= 0) {
@@ -2355,12 +2356,12 @@
             const handleDeleteEvent = (id) => {
                 if (confirm('Delete this event and all its menu items?')) {
                     updateData('menus', menus.filter(m => m.id !== id));
-                    if (selectedEventId === id) setSelectedEventId(null);
                 }
             };
 
-            const handleAddItem = () => {
-                setEditingItem({ name: '', platePrice: 0 });
+            const handleAddItem = (eventId) => {
+                setCurrentEventId(eventId);
+                setEditingItem({ name: '', pricePerPlate: 0, description: '' });
                 setShowItemModal(true);
             };
 
@@ -2370,45 +2371,26 @@
                     return;
                 }
                 const updatedMenus = [...menus];
-                const eventIdx = updatedMenus.findIndex(m => m.id === selectedEventId);
+                const eventIdx = updatedMenus.findIndex(m => m.id === currentEventId);
                 if (eventIdx >= 0) {
                     updatedMenus[eventIdx].items.push(item);
                     updateData('menus', updatedMenus);
                 }
                 setShowItemModal(false);
                 setEditingItem(null);
+                setCurrentEventId(null);
             };
 
-            const handleDeleteItem = (itemIdx) => {
+            const handleDeleteItem = (eventId, itemIdx) => {
                 if (confirm('Delete this menu item?')) {
                     const updatedMenus = [...menus];
-                    const eventIdx = updatedMenus.findIndex(m => m.id === selectedEventId);
+                    const eventIdx = updatedMenus.findIndex(m => m.id === eventId);
                     if (eventIdx >= 0) {
                         updatedMenus[eventIdx].items.splice(itemIdx, 1);
                         updateData('menus', updatedMenus);
                     }
                 }
             };
-
-            const handleBulkSetMenu = () => {
-                if (!selectedEventId) return;
-                const itemsText = prompt('Enter menu items (one per line, format: "Item Name, Price")');
-                if (!itemsText) return;
-                const lines = itemsText.split('\n').filter(l => l.trim());
-                const items = lines.map(line => {
-                    const [name, price] = line.split(',').map(s => s.trim());
-                    return { name, platePrice: parseFloat(price) || 0 };
-                }).filter(i => i.name);
-                const updatedMenus = [...menus];
-                const eventIdx = updatedMenus.findIndex(m => m.id === selectedEventId);
-                if (eventIdx >= 0) {
-                    updatedMenus[eventIdx].items = [...updatedMenus[eventIdx].items, ...items];
-                    updateData('menus', updatedMenus);
-                }
-            };
-
-            const selectedEvent = menus.find(m => m.id === selectedEventId);
-            const totalCost = selectedEvent?.items.reduce((sum, item) => sum + (item.platePrice * (selectedEvent.guestsAttended || 0)), 0) || 0;
 
             return (
                 <div>
@@ -2419,85 +2401,78 @@
                         </div>
                     </div>
 
-                    <div className="card">
-                        <h3>Events</h3>
-                        {menus.length > 0 ? (
-                            <div className="table-container">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Event</th>
-                                            <th>Guests Booked</th>
-                                            <th>Guests Attended</th>
-                                            <th>Menu Items</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {menus.map(event => (
-                                            <tr key={event.id} style={{ cursor: 'pointer', background: selectedEventId === event.id ? 'var(--color-bg-secondary)' : 'transparent' }} onClick={() => setSelectedEventId(event.id)}>
-                                                <td><strong>{event.name}</strong></td>
-                                                <td>{event.guestsBooked || 0}</td>
-                                                <td>{event.guestsAttended || 0}</td>
-                                                <td>{event.items?.length || 0} items</td>
-                                                <td>
-                                                    <button className="btn btn-outline btn-small" onClick={(e) => { e.stopPropagation(); handleEditEvent(event); }}>Edit</button>
-                                                    <button className="btn btn-danger btn-small" onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}>Delete</button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
+                    {menus.length > 0 ? (
+                        menus.map(event => {
+                            const expTotal = event.items?.reduce((sum, item) => sum + ((item.pricePerPlate || 0) * (event.expectedGuests || 0)), 0) || 0;
+                            const actTotal = event.items?.reduce((sum, item) => sum + ((item.pricePerPlate || 0) * (event.attendedGuests || 0)), 0) || 0;
+                            return (
+                                <div key={event.id} className="card">
+                                    <div className="flex-between">
+                                        <div>
+                                            <h3>{event.name}</h3>
+                                            <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                                                Expected: {event.expectedGuests || 0} guests | Attended: {event.attendedGuests || 0} guests
+                                            </div>
+                                            <div style={{ marginTop: '8px', display: 'flex', gap: '16px' }}>
+                                                <p><strong>Expected Total:</strong> {formatCurrency(expTotal)}</p>
+                                                <p><strong>Actual Total:</strong> {formatCurrency(actTotal)}</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <button className="btn btn-outline btn-small" onClick={() => handleEditEvent(event)}>Edit Event</button>
+                                            <button className="btn btn-danger btn-small" onClick={() => handleDeleteEvent(event.id)}>Delete Event</button>
+                                        </div>
+                                    </div>
+                                    <div style={{ marginTop: '16px' }}>
+                                        <div className="flex-between" style={{ marginBottom: '12px' }}>
+                                            <strong>Menu Items</strong>
+                                            <button className="btn btn-primary btn-small" onClick={() => handleAddItem(event.id)}>Add Item</button>
+                                        </div>
+                                        {event.items?.length > 0 ? (
+                                            <div className="table-container">
+                                                <table className="table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Item</th>
+                                                            <th>Price Per Plate</th>
+                                                            <th>Description</th>
+                                                            <th>Expected Total</th>
+                                                            <th>Actual Total</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {event.items.map((item, idx) => (
+                                                            <tr key={idx}>
+                                                                <td><strong>{item.name}</strong></td>
+                                                                <td>{formatCurrency(item.pricePerPlate || 0)}</td>
+                                                                <td style={{ fontSize: '12px', maxWidth: '200px' }}>{item.description || '-'}</td>
+                                                                <td>{formatCurrency((item.pricePerPlate || 0) * (event.expectedGuests || 0))}</td>
+                                                                <td>{formatCurrency((item.pricePerPlate || 0) * (event.attendedGuests || 0))}</td>
+                                                                <td>
+                                                                    <button className="btn btn-danger btn-small" onClick={() => handleDeleteItem(event.id, idx)}>Delete</button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ) : (
+                                            <div className="empty-state">
+                                                <div className="empty-state-icon">🍽️</div>
+                                                <p>No menu items added</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="card">
                             <div className="empty-state">
                                 <div className="empty-state-icon">🍽️</div>
                                 <p>No events added</p>
                             </div>
-                        )}
-                    </div>
-
-                    {selectedEvent && (
-                        <div className="card">
-                            <div className="flex-between">
-                                <h3>{selectedEvent.name} - Menu</h3>
-                                <div>
-                                    <button className="btn btn-outline btn-small" onClick={handleBulkSetMenu}>Bulk Add</button>
-                                    <button className="btn btn-primary btn-small" onClick={handleAddItem}>Add Item</button>
-                                </div>
-                            </div>
-                            <p style={{ marginTop: '8px' }}><strong>Total Cost:</strong> {formatCurrency(totalCost)}</p>
-                            {selectedEvent.items?.length > 0 ? (
-                                <div className="table-container">
-                                    <table className="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Item</th>
-                                                <th>Plate Price</th>
-                                                <th>Total Cost</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {selectedEvent.items.map((item, idx) => (
-                                                <tr key={idx}>
-                                                    <td><strong>{item.name}</strong></td>
-                                                    <td>{formatCurrency(item.platePrice || 0)}</td>
-                                                    <td>{formatCurrency((item.platePrice || 0) * (selectedEvent.guestsAttended || 0))}</td>
-                                                    <td>
-                                                        <button className="btn btn-danger btn-small" onClick={() => handleDeleteItem(idx)}>Delete</button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <div className="empty-state">
-                                    <div className="empty-state-icon">🍽️</div>
-                                    <p>No menu items</p>
-                                </div>
-                            )}
                         </div>
                     )}
 
@@ -2505,7 +2480,7 @@
                         <EventModal event={editingEvent} onSave={handleSaveEvent} onClose={() => { setShowEventModal(false); setEditingEvent(null); }} />
                     )}
                     {showItemModal && (
-                        <MenuItemModal item={editingItem} onSave={handleSaveItem} onClose={() => { setShowItemModal(false); setEditingItem(null); }} />
+                        <MenuItemModal item={editingItem} onSave={handleSaveItem} onClose={() => { setShowItemModal(false); setEditingItem(null); setCurrentEventId(null); }} />
                     )}
                 </div>
             );
@@ -2526,12 +2501,12 @@
                                 <input type="text" className="form-input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Guests Booked</label>
-                                <input type="number" className="form-input" value={formData.guestsBooked} onChange={e => setFormData({ ...formData, guestsBooked: parseInt(e.target.value) || 0 })} />
+                                <label className="form-label">Expected Guests</label>
+                                <input type="number" className="form-input" value={formData.expectedGuests} onChange={e => setFormData({ ...formData, expectedGuests: parseInt(e.target.value) || 0 })} />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Guests Attended</label>
-                                <input type="number" className="form-input" value={formData.guestsAttended} onChange={e => setFormData({ ...formData, guestsAttended: parseInt(e.target.value) || 0 })} />
+                                <label className="form-label">Attended Guests</label>
+                                <input type="number" className="form-input" value={formData.attendedGuests} onChange={e => setFormData({ ...formData, attendedGuests: parseInt(e.target.value) || 0 })} />
                             </div>
                         </div>
                         <div className="modal-footer">
@@ -2547,7 +2522,7 @@
             const [formData, setFormData] = useState(item);
             return (
                 <div className="modal-overlay" onClick={onClose}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
                         <div className="modal-header">
                             <h3 className="modal-title">Add Menu Item</h3>
                             <button className="modal-close" onClick={onClose}>&times;</button>
@@ -2558,8 +2533,12 @@
                                 <input type="text" className="form-input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., Paneer Tikka" />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Plate Price (₹)</label>
-                                <input type="number" className="form-input" value={formData.platePrice} onChange={e => setFormData({ ...formData, platePrice: parseFloat(e.target.value) || 0 })} />
+                                <label className="form-label">Price Per Plate (₹)</label>
+                                <input type="number" className="form-input" value={formData.pricePerPlate} onChange={e => setFormData({ ...formData, pricePerPlate: parseFloat(e.target.value) || 0 })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Description</label>
+                                <textarea className="form-textarea" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Menu item description" rows="3" />
                             </div>
                         </div>
                         <div className="modal-footer">
