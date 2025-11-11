@@ -1,9 +1,9 @@
 // Neon Postgres Database Integration
 const DB_CONFIG = {
-    host: process.env.NEON_DB_HOST,
-    database: process.env.NEON_DB_NAME,
-    username: process.env.NEON_DB_USER,
-    password: process.env.NEON_DB_PASSWORD,
+    host: window.ENV?.NEON_DB_HOST || '',
+    database: window.ENV?.NEON_DB_NAME || '',
+    username: window.ENV?.NEON_DB_USER || '',
+    password: window.ENV?.NEON_DB_PASSWORD || '',
 };
 
 class DatabaseManager {

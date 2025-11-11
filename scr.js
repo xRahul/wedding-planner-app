@@ -13,6 +13,7 @@
             savedGuestCategories: ['family', 'friends', 'relatives', 'family_friends', 'colleagues', 'vendors'],
             savedGuestRelations: ['maternal_uncle', 'maternal_aunt', 'paternal_uncle', 'paternal_aunt', 'father_sister', 'mother_sister', 'cousin', 'family_friend', 'college_friend', 'work_colleague', 'neighbor'],
             savedDietaryPreferences: ['veg', 'jain'],
+            savedFamilyRelations: ['spouse', 'son', 'daughter', 'father', 'mother', 'brother', 'sister', 'grandfather', 'grandmother', 'grandson', 'granddaughter'],
             timeline: [],
             guests: [],
             vendors: [],
@@ -117,9 +118,6 @@
             const errors = {};
             if (!info.brideName?.trim()) errors.brideName = 'Bride name is required';
             if (!info.groomName?.trim()) errors.groomName = 'Groom name is required';
-            if (!info.weddingDate) errors.weddingDate = 'Wedding date is required';
-            if (!info.location?.trim()) errors.location = 'Location is required';
-            if (!info.totalBudget || info.totalBudget <= 0) errors.totalBudget = 'Valid total budget is required';
             return Object.keys(errors).length ? errors : null;
         };
 
@@ -130,13 +128,6 @@
             if (!guest.side) errors.side = 'Bride/Groom side must be specified';
             if (!guest.relation) errors.relation = 'Relation is required';
             if (guest.phone && !/^[\d\s+()-]+$/.test(guest.phone)) errors.phone = 'Invalid phone number';
-            if (guest.familySize && (isNaN(guest.familySize) || guest.familySize < 1)) errors.familySize = 'Valid family size is required';
-            if (guest.arrival && !isValidDate(guest.arrival)) errors.arrival = 'Valid arrival date is required';
-            if (guest.departure && !isValidDate(guest.departure)) errors.departure = 'Valid departure date is required';
-            if (guest.departure && guest.arrival && new Date(guest.departure) < new Date(guest.arrival)) {
-                errors.departure = 'Departure date cannot be before arrival date';
-            }
-            if (!guest.ritualsAttending || guest.ritualsAttending.length === 0) errors.ritualsAttending = 'Please select at least one ritual to attend';
             return Object.keys(errors).length ? errors : null;
         };
 
@@ -149,7 +140,6 @@
             const errors = {};
             if (!vendor.name?.trim()) errors.name = 'Name is required';
             if (!vendor.type) errors.type = 'Vendor type is required';
-            if (!vendor.cost || vendor.cost < 0) errors.cost = 'Valid cost is required';
             if (vendor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vendor.email)) errors.email = 'Invalid email';
             return Object.keys(errors).length ? errors : null;
         };
@@ -157,15 +147,12 @@
         const validateTimelineEvent = (event) => {
             const errors = {};
             if (!event.ceremony?.trim()) errors.ceremony = 'Ceremony name is required';
-            if (!event.time?.trim()) errors.time = 'Event time is required';
-            if (!event.description?.trim()) errors.description = 'Event description is required';
             return Object.keys(errors).length ? errors : null;
         };
 
         const validateMenuItem = (item) => {
             const errors = {};
             if (!item.name?.trim()) errors.name = 'Item name is required';
-            if (!item.quantity || item.quantity <= 0) errors.quantity = 'Valid quantity is required';
             return Object.keys(errors).length ? errors : null;
         };
 
@@ -173,13 +160,8 @@
             const errors = {};
             if (type === 'accommodation') {
                 if (!item.hotel?.trim()) errors.hotel = 'Hotel name is required';
-                if (!item.checkIn) errors.checkIn = 'Check-in date is required';
-                if (!item.checkOut) errors.checkOut = 'Check-out date is required';
-                if (!item.guests?.length) errors.guests = 'At least one guest must be assigned';
             } else if (type === 'transport') {
-                if (!item.type?.trim()) errors.type = 'Transport type is required';
                 if (!item.details?.trim()) errors.details = 'Transport details are required';
-                if (!item.date) errors.date = 'Date is required';
             }
             return Object.keys(errors).length ? errors : null;
         };
@@ -191,7 +173,12 @@
         const formatDate = (dateString, withTime = false) => {
             if (!dateString) return '';
             const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                console.error('Invalid date string:', dateString);
+                return '';
+            }
             const options = { 
+                weekday: 'short',
                 year: 'numeric', 
                 month: 'short', 
                 day: 'numeric',
@@ -443,60 +430,117 @@
         const Timeline = ({ timeline, updateData, weddingDate }) => {
             const [editingEvent, setEditingEvent] = useState(null);
             const [showModal, setShowModal] = useState(false);
+            const [vendors, setVendors] = useState([]);
+
+            useEffect(() => {
+                const loadVendors = async () => {
+                    const data = await loadData();
+                    setVendors(data.vendors || []);
+                };
+                loadVendors();
+            }, []);
 
             const sortedTimeline = useMemo(() => {
                 return [...timeline].sort((a, b) => a.dayOffset - b.dayOffset);
             }, [timeline]);
 
             const handleAddEvent = (dayOffset) => {
+                const weddingDateObj = new Date(weddingDate);
+                const eventDate = new Date(weddingDateObj);
+                eventDate.setDate(eventDate.getDate() + dayOffset);
+                
                 setEditingEvent({
                     dayOffset,
-                    time: '10:00',
+                    date: eventDate.toISOString().split('T')[0],
+                    fromTime: '10:00',
+                    toTime: '12:00',
                     ceremony: 'Mehendi',
                     description: '',
-                    vendors: []
+                    vendorTypes: [],
+                    assignedVendors: {}
                 });
                 setShowModal(true);
             };
 
             const handleSaveEvent = (event) => {
-                const updatedTimeline = [...timeline];
-                const dayIndex = updatedTimeline.findIndex(d => d.dayOffset === event.dayOffset);
-                
-                if (dayIndex >= 0) {
-                    if (!updatedTimeline[dayIndex].events) {
-                        updatedTimeline[dayIndex].events = [];
+                try {
+                    const errors = validateTimelineEvent(event);
+                    if (errors) {
+                        const errorMsg = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join('\n');
+                        alert(`Please fix the following errors:\n\n${errorMsg}`);
+                        return;
                     }
-                    updatedTimeline[dayIndex].events.push({
-                        time: event.time,
-                        ceremony: event.ceremony,
-                        description: event.description,
-                        vendors: event.vendors,
-                        date: event.date
-                    });
-                } else {
+
                     const weddingDateObj = new Date(weddingDate);
-                    const eventDate = event.date ? new Date(event.date) : new Date(weddingDateObj);
-                    if (!event.date) {
-                        eventDate.setDate(eventDate.getDate() + event.dayOffset);
+                    if (isNaN(weddingDateObj.getTime())) {
+                        alert('Please set a valid wedding date in Settings first.');
+                        return;
                     }
                     
-                    updatedTimeline.push({
-                        dayOffset: event.dayOffset,
-                        date: eventDate.toISOString().split('T')[0],
-                        events: [{
-                            time: event.time,
-                            ceremony: event.ceremony,
-                            description: event.description,
-                            vendors: event.vendors,
-                            date: event.date
-                        }]
-                    });
+                    if (!event.date) {
+                        alert('Event date is required.');
+                        return;
+                    }
+
+                    const eventDateObj = new Date(event.date);
+                    if (isNaN(eventDateObj.getTime())) {
+                        alert('Invalid event date. Please select a valid date.');
+                        return;
+                    }
+
+                    const daysDiff = Math.round((eventDateObj - weddingDateObj) / (1000 * 60 * 60 * 24));
+                    
+                    const updatedTimeline = [...timeline];
+                    
+                    if (event.eventIndex !== undefined) {
+                        const oldDayIndex = updatedTimeline.findIndex(d => d.dayOffset === event.dayOffset);
+                        if (oldDayIndex >= 0) {
+                            updatedTimeline[oldDayIndex].events.splice(event.eventIndex, 1);
+                            if (updatedTimeline[oldDayIndex].events.length === 0) {
+                                updatedTimeline.splice(oldDayIndex, 1);
+                            }
+                        }
+                    }
+                    
+                    const dayIndex = updatedTimeline.findIndex(d => d.dayOffset === daysDiff);
+                    const eventData = {
+                        date: event.date || '',
+                        fromTime: event.fromTime || '',
+                        toTime: event.toTime || '',
+                        ceremony: event.ceremony,
+                        description: event.description,
+                        vendorTypes: event.vendorTypes,
+                        assignedVendors: event.assignedVendors
+                    };
+                    
+                    if (dayIndex >= 0) {
+                        if (!updatedTimeline[dayIndex].events) {
+                            updatedTimeline[dayIndex].events = [];
+                        }
+                        updatedTimeline[dayIndex].events.push(eventData);
+                    } else {
+                        updatedTimeline.push({
+                            dayOffset: daysDiff,
+                            date: event.date,
+                            events: [eventData]
+                        });
+                    }
+                    
+                    updateData('timeline', updatedTimeline);
+                    setShowModal(false);
+                    setEditingEvent(null);
+                } catch (error) {
+                    console.error('Error saving timeline event:', error);
+                    alert(`Failed to save event: ${error.message}`);
                 }
-                
-                updateData('timeline', updatedTimeline);
-                setShowModal(false);
-                setEditingEvent(null);
+            };
+
+            const handleEditEvent = (dayOffset, eventIndex) => {
+                const day = timeline.find(d => d.dayOffset === dayOffset);
+                if (day && day.events[eventIndex]) {
+                    setEditingEvent({ ...day.events[eventIndex], dayOffset, eventIndex });
+                    setShowModal(true);
+                }
             };
 
             const handleDeleteEvent = (dayOffset, eventIndex) => {
@@ -535,22 +579,49 @@
                                                 <div>
                                                     <strong style={{ fontSize: '16px' }}>{event.ceremony}</strong>
                                                     <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                                        {event.date && `📅 ${formatDate(event.date)} • `}🕐 {event.time}
+                                                        {event.fromTime && event.fromTime.trim() && `🕐 ${event.fromTime}`}
+                                                        {event.toTime && event.toTime.trim() && ` - ${event.toTime}`}
                                                     </div>
                                                 </div>
-                                                <button 
-                                                    className="btn btn-danger btn-small"
-                                                    onClick={() => handleDeleteEvent(day.dayOffset, idx)}
-                                                >
-                                                    Delete
-                                                </button>
+                                                <div>
+                                                    <button 
+                                                        className="btn btn-outline btn-small"
+                                                        onClick={() => handleEditEvent(day.dayOffset, idx)}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button 
+                                                        className="btn btn-danger btn-small"
+                                                        onClick={() => handleDeleteEvent(day.dayOffset, idx)}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </div>
                                             {event.description && (
                                                 <p style={{ margin: '8px 0', fontSize: '14px' }}>{event.description}</p>
                                             )}
-                                            {event.vendors && event.vendors.length > 0 && (
+                                            {event.vendorTypes && event.vendorTypes.length > 0 && (
                                                 <div style={{ fontSize: '12px', marginTop: '8px' }}>
-                                                    <strong>Vendors:</strong> {event.vendors.map(v => v.replace('_', ' ')).join(', ')}
+                                                    <strong>Vendors:</strong>
+                                                    <div style={{ marginTop: '4px' }}>
+                                                        {event.vendorTypes.map(type => {
+                                                            const assigned = event.assignedVendors?.[type] || [];
+                                                            const vendorNames = (Array.isArray(assigned) ? assigned : [assigned])
+                                                                .map(id => vendors.find(v => v.id === id)?.name)
+                                                                .filter(Boolean);
+                                                            return (
+                                                                <div key={type} style={{ marginBottom: '2px' }}>
+                                                                    <span style={{ textTransform: 'capitalize' }}>{type.replace('_', ' ')}:</span>{' '}
+                                                                    {vendorNames.length > 0 ? (
+                                                                        <span>{vendorNames.join(', ')}</span>
+                                                                    ) : (
+                                                                        <span style={{ color: 'var(--color-warning)', fontStyle: 'italic' }}>Not assigned yet</span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -576,13 +647,14 @@
                             event={editingEvent}
                             onSave={handleSaveEvent}
                             onClose={() => { setShowModal(false); setEditingEvent(null); }}
+                            vendors={vendors}
                         />
                     )}
                 </div>
             );
         };
 
-        const TimelineEventModal = ({ event, onSave, onClose }) => {
+        const TimelineEventModal = ({ event, onSave, onClose, vendors }) => {
             const [formData, setFormData] = useState(event);
 
             const ceremonies = [
@@ -602,12 +674,21 @@
                 'stage_setup', 'varmala_setup', 'luxury_car_rental'
             ];
 
-            const handleVendorToggle = (vendor) => {
-                const vendors = formData.vendors || [];
-                const newVendors = vendors.includes(vendor)
-                    ? vendors.filter(v => v !== vendor)
-                    : [...vendors, vendor];
-                setFormData({ ...formData, vendors: newVendors });
+            const handleVendorTypeChange = (e) => {
+                const options = Array.from(e.target.selectedOptions, option => option.value);
+                setFormData({ ...formData, vendorTypes: options, assignedVendors: formData.assignedVendors || {} });
+            };
+
+            const handleVendorAssign = (type, e) => {
+                const selectedIds = Array.from(e.target.selectedOptions, option => option.value);
+                setFormData({ 
+                    ...formData, 
+                    assignedVendors: { ...formData.assignedVendors, [type]: selectedIds } 
+                });
+            };
+
+            const handleSave = () => {
+                onSave(formData);
             };
 
             return (
@@ -618,16 +699,13 @@
                             <button className="modal-close" onClick={onClose}>&times;</button>
                         </div>
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label className="form-label">Ceremony</label>
-                                <select 
-                                    className="form-select"
-                                    value={formData.ceremony}
-                                    onChange={e => setFormData({ ...formData, ceremony: e.target.value })}
-                                >
-                                    {ceremonies.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
+                            <SelectOrAddField
+                                label="Ceremony"
+                                value={formData.ceremony}
+                                onChange={(val) => setFormData({ ...formData, ceremony: val })}
+                                options={ceremonies}
+                                placeholder="Enter custom ceremony"
+                            />
                             <div className="form-group">
                                 <label className="form-label">Date</label>
                                 <input 
@@ -638,12 +716,21 @@
                                 />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Time</label>
+                                <label className="form-label">From Time</label>
                                 <input 
                                     type="time"
                                     className="form-input"
-                                    value={formData.time}
-                                    onChange={e => setFormData({ ...formData, time: e.target.value })}
+                                    value={formData.fromTime}
+                                    onChange={e => setFormData({ ...formData, fromTime: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">To Time</label>
+                                <input 
+                                    type="time"
+                                    className="form-input"
+                                    value={formData.toTime}
+                                    onChange={e => setFormData({ ...formData, toTime: e.target.value })}
                                 />
                             </div>
                             <div className="form-group">
@@ -655,24 +742,52 @@
                                 />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Vendors Assigned</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                                    {vendorTypes.map(vendor => (
-                                        <label key={vendor} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={(formData.vendors || []).includes(vendor)}
-                                                onChange={() => handleVendorToggle(vendor)}
-                                            />
-                                            {vendor.replace('_', ' ')}
-                                        </label>
+                                <label className="form-label">Vendor Types</label>
+                                <select 
+                                    multiple
+                                    className="form-select"
+                                    value={formData.vendorTypes || []}
+                                    onChange={handleVendorTypeChange}
+                                    style={{ height: '120px' }}
+                                >
+                                    {vendorTypes.map(type => (
+                                        <option key={type} value={type}>{type.replace('_', ' ')}</option>
                                     ))}
-                                </div>
+                                </select>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Hold Ctrl/Cmd to select multiple</div>
                             </div>
+                            {formData.vendorTypes && formData.vendorTypes.length > 0 && (
+                                <div className="form-group">
+                                    <label className="form-label">Assign Vendors</label>
+                                    {formData.vendorTypes.map(type => {
+                                        const typeVendors = vendors.filter(v => v.type === type);
+                                        return (
+                                            <div key={type} style={{ marginBottom: '12px' }}>
+                                                <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px', display: 'block' }}>
+                                                    {type.replace('_', ' ')}
+                                                </label>
+                                                <select
+                                                    multiple
+                                                    className="form-select"
+                                                    value={formData.assignedVendors?.[type] || []}
+                                                    onChange={e => handleVendorAssign(type, e)}
+                                                    style={{ height: '80px' }}
+                                                >
+                                                    {typeVendors.map(v => (
+                                                        <option key={v.id} value={v.id}>{v.name}</option>
+                                                    ))}
+                                                </select>
+                                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Hold Ctrl/Cmd to select multiple</div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                         </div>
                         <div className="modal-footer">
                             <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-                            <button className="btn btn-primary" onClick={() => onSave(formData)}>Save Event</button>
+                            <button className="btn btn-primary" onClick={handleSave}>Save Event</button>
                         </div>
                     </div>
                 </div>
@@ -688,6 +803,7 @@
             const [savedCategories, setSavedCategories] = useState(data.savedGuestCategories || []);
             const [savedRelations, setSavedRelations] = useState(data.savedGuestRelations || []);
             const [savedDietary, setSavedDietary] = useState(data.savedDietaryPreferences || []);
+            const [savedFamilyRelations, setSavedFamilyRelations] = useState(data.savedFamilyRelations || []);
 
             const handleUpdateCategories = (newCategories) => {
                 setSavedCategories(newCategories);
@@ -704,6 +820,11 @@
                 updateData('savedDietaryPreferences', newDietary);
             };
 
+            const handleUpdateFamilyRelations = (newRelations) => {
+                setSavedFamilyRelations(newRelations);
+                updateData('savedFamilyRelations', newRelations);
+            };
+
             const filteredGuests = useMemo(() => {
                 if (filter === 'all') return guests;
                 return guests.filter(g => g.category === filter || g.rsvpStatus === filter);
@@ -712,12 +833,20 @@
             const handleAdd = () => {
                 setEditingGuest({
                     id: generateId(),
+                    type: 'single',
                     name: '',
                     category: 'family',
+                    side: 'groom',
+                    relation: '',
                     phone: '',
                     dietary: 'veg',
                     rsvpStatus: 'pending',
-                    notes: ''
+                    aadharCollected: false,
+                    room: '',
+                    arrivalDate: '',
+                    departureDate: '',
+                    notes: '',
+                    familyMembers: []
                 });
                 setShowModal(true);
             };
@@ -728,17 +857,28 @@
             };
 
             const handleSave = (guest) => {
-                const index = guests.findIndex(g => g.id === guest.id);
-                let updatedGuests;
-                if (index >= 0) {
-                    updatedGuests = [...guests];
-                    updatedGuests[index] = guest;
-                } else {
-                    updatedGuests = [...guests, guest];
+                try {
+                    const errors = validateGuest(guest);
+                    if (errors) {
+                        const errorMsg = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join('\n');
+                        alert(`Please fix the following errors:\n\n${errorMsg}`);
+                        return;
+                    }
+                    const index = guests.findIndex(g => g.id === guest.id);
+                    let updatedGuests;
+                    if (index >= 0) {
+                        updatedGuests = [...guests];
+                        updatedGuests[index] = guest;
+                    } else {
+                        updatedGuests = [...guests, guest];
+                    }
+                    updateData('guests', updatedGuests);
+                    setShowModal(false);
+                    setEditingGuest(null);
+                } catch (error) {
+                    console.error('Error saving guest:', error);
+                    alert(`Failed to save guest: ${error.message}`);
                 }
-                updateData('guests', updatedGuests);
-                setShowModal(false);
-                setEditingGuest(null);
             };
 
             const handleDelete = (id) => {
@@ -778,11 +918,18 @@
                                 <table className="table">
                                     <thead>
                                         <tr>
+                                            <th>Type</th>
                                             <th>Name</th>
-                                            <th>Category</th>
+                                            <th>Side</th>
+                                            <th>Relation</th>
                                             <th>Phone</th>
+                                            <th>Room</th>
+                                            <th>Arrival</th>
+                                            <th>Departure</th>
                                             <th>Dietary</th>
+                                            <th>Category</th>
                                             <th>RSVP</th>
+                                            <th>Aadhar</th>
                                             <th>Notes</th>
                                             <th>Actions</th>
                                         </tr>
@@ -790,16 +937,155 @@
                                     <tbody>
                                         {filteredGuests.map(guest => (
                                             <tr key={guest.id}>
-                                                <td><strong>{guest.name}</strong></td>
-                                                <td style={{ textTransform: 'capitalize' }}>{guest.category}</td>
-                                                <td>{guest.phone}</td>
-                                                <td style={{ textTransform: 'capitalize' }}>{guest.dietary.replace('_', ' ')}</td>
+                                                <td><span className="badge badge-info">{guest.type === 'family' ? '👨‍👩‍👧‍👦 Family' : '👤 Single'}</span></td>
+                                                <td>
+                                                    <strong>{guest.name}</strong>
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {member.name}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td style={{ textTransform: 'capitalize' }}>
+                                                    {guest.side}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {guest.side}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td style={{ textTransform: 'capitalize' }}>
+                                                    {guest.relation?.replace('_', ' ')}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {member.familyRelation?.replace('_', ' ')}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {guest.phone}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {member.phone || '-'}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {guest.room || '-'}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {member.room || '-'}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td style={{ fontSize: '11px' }}>
+                                                    {guest.arrivalDate ? formatDate(guest.arrivalDate) : '-'}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {member.arrivalDate ? formatDate(member.arrivalDate) : '-'}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td style={{ fontSize: '11px' }}>
+                                                    {guest.departureDate ? formatDate(guest.departureDate) : '-'}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {member.departureDate ? formatDate(member.departureDate) : '-'}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td style={{ textTransform: 'capitalize' }}>
+                                                    {guest.dietary?.replace('_', ' ')}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {member.dietary?.replace('_', ' ')}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td style={{ textTransform: 'capitalize' }}>
+                                                    {guest.category?.replace('_', ' ')}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {guest.category?.replace('_', ' ')}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td>
                                                     <span className={`badge ${guest.rsvpStatus === 'yes' ? 'badge-success' : guest.rsvpStatus === 'no' ? 'badge-error' : 'badge-warning'}`}>
-                                                        {guest.rsvpStatus === 'yes' ? 'Confirmed' : guest.rsvpStatus === 'no' ? 'Declined' : 'Pending'}
+                                                        {guest.rsvpStatus === 'yes' ? 'Yes' : guest.rsvpStatus === 'no' ? 'No' : 'Pending'}
                                                     </span>
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • <span className={`badge ${guest.rsvpStatus === 'yes' ? 'badge-success' : guest.rsvpStatus === 'no' ? 'badge-error' : 'badge-warning'}`}>
+                                                                        {guest.rsvpStatus === 'yes' ? 'Yes' : guest.rsvpStatus === 'no' ? 'No' : 'Pending'}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </td>
-                                                <td style={{ fontSize: '12px' }}>{guest.notes}</td>
+                                                <td>
+                                                    {guest.aadharCollected ? '✅' : '❌'}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • {member.aadharCollected ? '✅' : '❌'}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td style={{ fontSize: '12px' }}>
+                                                    {guest.notes}
+                                                    {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                            {guest.familyMembers.map((member, idx) => (
+                                                                <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                                    • -
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td>
                                                     <button className="btn btn-outline btn-small" onClick={() => handleEdit(guest)}>Edit</button>
                                                     <button className="btn btn-danger btn-small" onClick={() => handleDelete(guest.id)}>Delete</button>
@@ -825,9 +1111,11 @@
                             savedCategories={savedCategories}
                             savedRelations={savedRelations}
                             savedDietary={savedDietary}
+                            savedFamilyRelations={savedFamilyRelations}
                             onUpdateCategories={handleUpdateCategories}
                             onUpdateRelations={handleUpdateRelations}
                             onUpdateDietary={handleUpdateDietary}
+                            onUpdateFamilyRelations={handleUpdateFamilyRelations}
                         />
                     )}
                 </div>
@@ -904,8 +1192,8 @@
             );
         };
 
-        const GuestModal = ({ guest, onSave, onClose, savedCategories, savedRelations, savedDietary, onUpdateCategories, onUpdateRelations, onUpdateDietary }) => {
-            const [formData, setFormData] = useState(guest);
+        const GuestModal = ({ guest, onSave, onClose, savedCategories, savedRelations, savedDietary, savedFamilyRelations, onUpdateCategories, onUpdateRelations, onUpdateDietary, onUpdateFamilyRelations }) => {
+            const [formData, setFormData] = useState(guest || { type: 'single', familyMembers: [] });
 
             const handleCategoryChange = (newCategory) => {
                 setFormData({ ...formData, category: newCategory });
@@ -928,6 +1216,36 @@
                 }
             };
 
+            const handleAddFamilyMember = () => {
+                const newMember = {
+                    id: generateId(),
+                    name: '',
+                    familyRelation: '',
+                    phone: '',
+                    room: '',
+                    arrivalDate: '',
+                    departureDate: '',
+                    dietary: 'veg',
+                    aadharCollected: false
+                };
+                setFormData({
+                    ...formData,
+                    familyMembers: [...(formData.familyMembers || []), newMember]
+                });
+            };
+
+            const handleRemoveFamilyMember = (index) => {
+                const updated = [...formData.familyMembers];
+                updated.splice(index, 1);
+                setFormData({ ...formData, familyMembers: updated });
+            };
+
+            const handleUpdateFamilyMember = (index, field, value) => {
+                const updated = [...formData.familyMembers];
+                updated[index] = { ...updated[index], [field]: value };
+                setFormData({ ...formData, familyMembers: updated });
+            };
+
             return (
                 <div className="modal-overlay" onClick={onClose}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
@@ -937,7 +1255,18 @@
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
-                                <label className="form-label">Name *</label>
+                                <label className="form-label">Guest Type *</label>
+                                <select 
+                                    className="form-select"
+                                    value={formData.type}
+                                    onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                >
+                                    <option value="single">Single Guest</option>
+                                    <option value="family">Family</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">{formData.type === 'family' ? 'Family Head Name *' : 'Name *'}</label>
                                 <input 
                                     type="text"
                                     className="form-input"
@@ -954,7 +1283,7 @@
                                 placeholder="Enter custom category"
                             />
                             <div className="form-group">
-                                <label className="form-label">Side</label>
+                                <label className="form-label">Side *</label>
                                 <select 
                                     className="form-select"
                                     value={formData.side}
@@ -972,21 +1301,40 @@
                                 placeholder="Enter custom relation"
                             />
                             <div className="form-group">
-                                <label className="form-label">Gotra (if applicable)</label>
-                                <input 
-                                    type="text"
-                                    className="form-input"
-                                    value={formData.gotra || ''}
-                                    onChange={e => setFormData({ ...formData, gotra: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group">
                                 <label className="form-label">Phone</label>
                                 <input 
                                     type="tel"
                                     className="form-input"
                                     value={formData.phone}
                                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Room Number</label>
+                                <input 
+                                    type="text"
+                                    className="form-input"
+                                    value={formData.room || ''}
+                                    onChange={e => setFormData({ ...formData, room: e.target.value })}
+                                    placeholder="e.g., 101, A-205"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Arrival Date</label>
+                                <input 
+                                    type="date"
+                                    className="form-input"
+                                    value={formData.arrivalDate || ''}
+                                    onChange={e => setFormData({ ...formData, arrivalDate: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Departure Date</label>
+                                <input 
+                                    type="date"
+                                    className="form-input"
+                                    value={formData.departureDate || ''}
+                                    onChange={e => setFormData({ ...formData, departureDate: e.target.value })}
                                 />
                             </div>
                             <SelectOrAddField
@@ -1008,6 +1356,114 @@
                                     <option value="no">Declined</option>
                                 </select>
                             </div>
+                            <div className="form-group">
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input 
+                                        type="checkbox"
+                                        checked={formData.aadharCollected || false}
+                                        onChange={e => setFormData({ ...formData, aadharCollected: e.target.checked })}
+                                    />
+                                    <span className="form-label" style={{ margin: 0 }}>Aadhar Card Collected</span>
+                                </label>
+                            </div>
+                            {formData.type === 'family' && (
+                                <div className="form-group">
+                                    <div className="flex-between" style={{ marginBottom: '8px' }}>
+                                        <label className="form-label">Family Members</label>
+                                        <button type="button" className="btn btn-primary btn-small" onClick={handleAddFamilyMember}>
+                                            + Add Member
+                                        </button>
+                                    </div>
+                                    {formData.familyMembers && formData.familyMembers.length > 0 ? (
+                                        <div style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '12px', maxHeight: '300px', overflowY: 'auto' }}>
+                                            {formData.familyMembers.map((member, idx) => (
+                                                <div key={member.id} style={{ padding: '12px', marginBottom: '8px', background: 'var(--color-bg-secondary)', borderRadius: '4px' }}>
+                                                    <div className="flex-between" style={{ marginBottom: '8px' }}>
+                                                        <strong>Member {idx + 1}</strong>
+                                                        <button type="button" className="btn btn-danger btn-small" onClick={() => handleRemoveFamilyMember(idx)}>
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                    <div style={{ display: 'grid', gap: '8px' }}>
+                                                        <input 
+                                                            type="text"
+                                                            className="form-input"
+                                                            placeholder="Name *"
+                                                            value={member.name}
+                                                            onChange={e => handleUpdateFamilyMember(idx, 'name', e.target.value)}
+                                                        />
+                                                        <select 
+                                                            className="form-select"
+                                                            value={member.familyRelation}
+                                                            onChange={e => {
+                                                                const val = e.target.value;
+                                                                handleUpdateFamilyMember(idx, 'familyRelation', val);
+                                                                if (val && !savedFamilyRelations.includes(val)) {
+                                                                    onUpdateFamilyRelations([...savedFamilyRelations, val]);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="">Select Relation to Head</option>
+                                                            {savedFamilyRelations.map(rel => (
+                                                                <option key={rel} value={rel}>{rel.replace('_', ' ')}</option>
+                                                            ))}
+                                                        </select>
+                                                        <input 
+                                                            type="tel"
+                                                            className="form-input"
+                                                            placeholder="Phone (optional)"
+                                                            value={member.phone || ''}
+                                                            onChange={e => handleUpdateFamilyMember(idx, 'phone', e.target.value)}
+                                                        />
+                                                        <input 
+                                                            type="text"
+                                                            className="form-input"
+                                                            placeholder="Room (optional)"
+                                                            value={member.room || ''}
+                                                            onChange={e => handleUpdateFamilyMember(idx, 'room', e.target.value)}
+                                                        />
+                                                        <input 
+                                                            type="date"
+                                                            className="form-input"
+                                                            placeholder="Arrival Date"
+                                                            value={member.arrivalDate || ''}
+                                                            onChange={e => handleUpdateFamilyMember(idx, 'arrivalDate', e.target.value)}
+                                                        />
+                                                        <input 
+                                                            type="date"
+                                                            className="form-input"
+                                                            placeholder="Departure Date"
+                                                            value={member.departureDate || ''}
+                                                            onChange={e => handleUpdateFamilyMember(idx, 'departureDate', e.target.value)}
+                                                        />
+                                                        <select 
+                                                            className="form-select"
+                                                            value={member.dietary}
+                                                            onChange={e => handleUpdateFamilyMember(idx, 'dietary', e.target.value)}
+                                                        >
+                                                            {savedDietary.map(diet => (
+                                                                <option key={diet} value={diet}>{diet.replace('_', ' ')}</option>
+                                                            ))}
+                                                        </select>
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={member.aadharCollected || false}
+                                                                onChange={e => handleUpdateFamilyMember(idx, 'aadharCollected', e.target.checked)}
+                                                            />
+                                                            Aadhar Collected
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', textAlign: 'center', padding: '16px' }}>
+                                            No family members added
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                             <div className="form-group">
                                 <label className="form-label">Notes</label>
                                 <textarea 
@@ -1051,8 +1507,11 @@
                     name: '',
                     contact: '',
                     email: '',
-                    cost: 0,
+                    estimatedCost: 0,
+                    finalCost: 0,
                     status: 'pending',
+                    availability: [],
+                    bookedDate: '',
                     notes: ''
                 });
                 setShowModal(true);
@@ -1064,17 +1523,28 @@
             };
 
             const handleSave = (vendor) => {
-                const index = vendors.findIndex(v => v.id === vendor.id);
-                let updatedVendors;
-                if (index >= 0) {
-                    updatedVendors = [...vendors];
-                    updatedVendors[index] = vendor;
-                } else {
-                    updatedVendors = [...vendors, vendor];
+                try {
+                    const errors = validateVendor(vendor);
+                    if (errors) {
+                        const errorMsg = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join('\n');
+                        alert(`Please fix the following errors:\n\n${errorMsg}`);
+                        return;
+                    }
+                    const index = vendors.findIndex(v => v.id === vendor.id);
+                    let updatedVendors;
+                    if (index >= 0) {
+                        updatedVendors = [...vendors];
+                        updatedVendors[index] = vendor;
+                    } else {
+                        updatedVendors = [...vendors, vendor];
+                    }
+                    updateData('vendors', updatedVendors);
+                    setShowModal(false);
+                    setEditingVendor(null);
+                } catch (error) {
+                    console.error('Error saving vendor:', error);
+                    alert(`Failed to save vendor: ${error.message}`);
                 }
-                updateData('vendors', updatedVendors);
-                setShowModal(false);
-                setEditingVendor(null);
             };
 
             const handleDelete = (id) => {
@@ -1084,7 +1554,7 @@
             };
 
             const totalCost = useMemo(() => {
-                return vendors.reduce((sum, v) => sum + (v.cost || 0), 0);
+                return vendors.reduce((sum, v) => sum + (v.finalCost || v.cost || 0), 0);
             }, [vendors]);
 
             return (
@@ -1115,24 +1585,49 @@
                                             <th>Name</th>
                                             <th>Contact</th>
                                             <th>Email</th>
-                                            <th>Cost</th>
+                                            <th>Estimated Cost</th>
+                                            <th>Final Cost</th>
+                                            <th>Availability</th>
+                                            <th>Booked Date</th>
                                             <th>Status</th>
+                                            <th>Notes</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {filteredVendors.map(vendor => (
                                             <tr key={vendor.id}>
-                                                <td style={{ textTransform: 'capitalize' }}>{vendor.type.replace('_', ' ')}</td>
+                                                <td><span className="badge badge-info" style={{ textTransform: 'capitalize' }}>{vendor.type.replace('_', ' ')}</span></td>
                                                 <td><strong>{vendor.name}</strong></td>
-                                                <td>{vendor.contact}</td>
-                                                <td style={{ fontSize: '12px' }}>{vendor.email}</td>
-                                                <td>{formatCurrency(vendor.cost)}</td>
+                                                <td>{vendor.contact || '-'}</td>
+                                                <td style={{ fontSize: '11px' }}>{vendor.email || '-'}</td>
+                                                <td>{formatCurrency(vendor.estimatedCost || vendor.cost || 0)}</td>
+                                                <td style={{ fontWeight: 'bold', color: vendor.finalCost > 0 ? 'var(--color-success)' : 'inherit' }}>
+                                                    {vendor.finalCost > 0 ? formatCurrency(vendor.finalCost) : '-'}
+                                                </td>
+                                                <td style={{ fontSize: '10px', maxWidth: '200px' }}>
+                                                    {vendor.availability && vendor.availability.length > 0 ? (
+                                                        vendor.availability.map((slot, idx) => (
+                                                            <div key={idx} style={{ marginBottom: '4px', padding: '2px 4px', background: 'var(--color-bg-secondary)', borderRadius: '4px' }}>
+                                                                {formatDate(slot.from)} {slot.fromTime}<br/>
+                                                                to {formatDate(slot.to)} {slot.toTime}
+                                                            </div>
+                                                        ))
+                                                    ) : (vendor.availableFrom && vendor.availableTo ? (
+                                                        <div>{formatDate(vendor.availableFrom)} - {formatDate(vendor.availableTo)}</div>
+                                                    ) : '-')}
+                                                </td>
+                                                <td style={{ fontSize: '11px' }}>
+                                                    {vendor.bookedDate ? (
+                                                        <span style={{ color: 'var(--color-success)', fontWeight: 'bold' }}>{formatDate(vendor.bookedDate)}</span>
+                                                    ) : '-'}
+                                                </td>
                                                 <td>
                                                     <span className={`badge ${vendor.status === 'confirmed' ? 'badge-success' : vendor.status === 'booked' ? 'badge-info' : 'badge-warning'}`}>
                                                         {vendor.status}
                                                     </span>
                                                 </td>
+                                                <td style={{ fontSize: '11px', maxWidth: '150px' }}>{vendor.notes || '-'}</td>
                                                 <td>
                                                     <button className="btn btn-outline btn-small" onClick={() => handleEdit(vendor)}>Edit</button>
                                                     <button className="btn btn-danger btn-small" onClick={() => handleDelete(vendor.id)}>Delete</button>
@@ -1182,18 +1677,13 @@
                             <button className="modal-close" onClick={onClose}>&times;</button>
                         </div>
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label className="form-label">Vendor Type</label>
-                                <select 
-                                    className="form-select"
-                                    value={formData.type}
-                                    onChange={e => setFormData({ ...formData, type: e.target.value })}
-                                >
-                                    {vendorTypes.map(type => (
-                                        <option key={type} value={type}>{type.replace('_', ' ')}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            <SelectOrAddField
+                                label="Vendor Type"
+                                value={formData.type}
+                                onChange={(val) => setFormData({ ...formData, type: val })}
+                                options={vendorTypes}
+                                placeholder="Enter custom vendor type"
+                            />
                             <div className="form-group">
                                 <label className="form-label">Name *</label>
                                 <input 
@@ -1223,12 +1713,111 @@
                                 />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Cost (₹)</label>
+                                <label className="form-label">Estimated Cost (₹)</label>
                                 <input 
                                     type="number"
                                     className="form-input"
-                                    value={formData.cost}
-                                    onChange={e => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
+                                    value={formData.estimatedCost || formData.cost || 0}
+                                    onChange={e => setFormData({ ...formData, estimatedCost: parseFloat(e.target.value) || 0 })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Final Paid Cost (₹)</label>
+                                <input 
+                                    type="number"
+                                    className="form-input"
+                                    value={formData.finalCost || 0}
+                                    onChange={e => setFormData({ ...formData, finalCost: parseFloat(e.target.value) || 0 })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <div className="flex-between" style={{ marginBottom: '8px' }}>
+                                    <label className="form-label">Availability Slots</label>
+                                    <button type="button" className="btn btn-primary btn-small" onClick={() => {
+                                        setFormData({
+                                            ...formData,
+                                            availability: [...(formData.availability || []), { from: '', fromTime: '', to: '', toTime: '' }]
+                                        });
+                                    }}>
+                                        + Add Slot
+                                    </button>
+                                </div>
+                                {formData.availability && formData.availability.length > 0 ? (
+                                    <div style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '12px' }}>
+                                        {formData.availability.map((slot, idx) => (
+                                            <div key={idx} style={{ padding: '8px', marginBottom: '8px', background: 'var(--color-bg-secondary)', borderRadius: '4px' }}>
+                                                <div className="flex-between" style={{ marginBottom: '8px' }}>
+                                                    <strong>Slot {idx + 1}</strong>
+                                                    <button type="button" className="btn btn-danger btn-small" onClick={() => {
+                                                        const updated = [...formData.availability];
+                                                        updated.splice(idx, 1);
+                                                        setFormData({ ...formData, availability: updated });
+                                                    }}>
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                    <input 
+                                                        type="date"
+                                                        className="form-input"
+                                                        placeholder="From Date"
+                                                        value={slot.from}
+                                                        onChange={e => {
+                                                            const updated = [...formData.availability];
+                                                            updated[idx].from = e.target.value;
+                                                            setFormData({ ...formData, availability: updated });
+                                                        }}
+                                                    />
+                                                    <input 
+                                                        type="time"
+                                                        className="form-input"
+                                                        placeholder="From Time"
+                                                        value={slot.fromTime}
+                                                        onChange={e => {
+                                                            const updated = [...formData.availability];
+                                                            updated[idx].fromTime = e.target.value;
+                                                            setFormData({ ...formData, availability: updated });
+                                                        }}
+                                                    />
+                                                    <input 
+                                                        type="date"
+                                                        className="form-input"
+                                                        placeholder="To Date"
+                                                        value={slot.to}
+                                                        onChange={e => {
+                                                            const updated = [...formData.availability];
+                                                            updated[idx].to = e.target.value;
+                                                            setFormData({ ...formData, availability: updated });
+                                                        }}
+                                                    />
+                                                    <input 
+                                                        type="time"
+                                                        className="form-input"
+                                                        placeholder="To Time"
+                                                        value={slot.toTime}
+                                                        onChange={e => {
+                                                            const updated = [...formData.availability];
+                                                            updated[idx].toTime = e.target.value;
+                                                            setFormData({ ...formData, availability: updated });
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', textAlign: 'center', padding: '16px' }}>
+                                        No availability slots added
+                                    </p>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Booked Date</label>
+                                <input 
+                                    type="date"
+                                    className="form-input"
+                                    value={formData.bookedDate || ''}
+                                    onChange={e => setFormData({ ...formData, bookedDate: e.target.value })}
                                 />
                             </div>
                             <div className="form-group">
@@ -1271,6 +1860,8 @@
 
         const Budget = ({ budget, updateData, totalBudget }) => {
             const [editingCategory, setEditingCategory] = useState(null);
+            const [showAddModal, setShowAddModal] = useState(false);
+            const [newCategoryName, setNewCategoryName] = useState('');
 
             const handleUpdate = (category, field, value) => {
                 const updatedBudget = budget.map(cat => 
@@ -1278,6 +1869,21 @@
                 );
                 updateData('budget', updatedBudget);
                 setEditingCategory(null);
+            };
+
+            const handleAddCategory = () => {
+                if (newCategoryName.trim()) {
+                    const updatedBudget = [...budget, { category: newCategoryName.trim().toLowerCase().replace(/\s+/g, '_'), planned: 0, actual: 0, subcategories: [] }];
+                    updateData('budget', updatedBudget);
+                    setNewCategoryName('');
+                    setShowAddModal(false);
+                }
+            };
+
+            const handleRemoveCategory = (category) => {
+                if (confirm(`Delete ${category} category?`)) {
+                    updateData('budget', budget.filter(cat => cat.category !== category));
+                }
             };
 
             const totals = useMemo(() => {
@@ -1290,7 +1896,10 @@
             return (
                 <div>
                     <div className="card">
-                        <h2 className="card-title">Budget Tracker</h2>
+                        <div className="flex-between">
+                            <h2 className="card-title">Budget Tracker</h2>
+                            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>Add Category</button>
+                        </div>
                         <div className="stats-grid">
                             <div className="stat-card">
                                 <div className="stat-value">{formatCurrency(totalBudget)}</div>
@@ -1361,6 +1970,12 @@
                                                     >
                                                         Edit
                                                     </button>
+                                                    <button 
+                                                        className="btn btn-danger btn-small"
+                                                        onClick={() => handleRemoveCategory(cat.category)}
+                                                    >
+                                                        Remove
+                                                    </button>
                                                 </td>
                                             </tr>
                                         );
@@ -1376,6 +1991,40 @@
                             onSave={handleUpdate}
                             onClose={() => setEditingCategory(null)}
                         />
+                    )}
+
+                    {showAddModal && (
+                        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+                            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                                <div className="modal-header">
+                                    <h3 className="modal-title">Add Budget Category</h3>
+                                    <button className="modal-close" onClick={() => setShowAddModal(false)}>&times;</button>
+                                </div>
+                                <div className="modal-body">
+                                    <div className="form-group">
+                                        <label className="form-label">Category Name *</label>
+                                        <input 
+                                            type="text"
+                                            className="form-input"
+                                            value={newCategoryName}
+                                            onChange={e => setNewCategoryName(e.target.value)}
+                                            placeholder="e.g., Flowers, Music"
+                                            onKeyPress={e => e.key === 'Enter' && handleAddCategory()}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <button className="btn btn-outline" onClick={() => setShowAddModal(false)}>Cancel</button>
+                                    <button 
+                                        className="btn btn-primary" 
+                                        onClick={handleAddCategory}
+                                        disabled={!newCategoryName.trim()}
+                                    >
+                                        Add Category
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </div>
             );
@@ -1459,17 +2108,27 @@
             };
 
             const handleSave = (task) => {
-                const index = tasks.findIndex(t => t.id === task.id);
-                let updatedTasks;
-                if (index >= 0) {
-                    updatedTasks = [...tasks];
-                    updatedTasks[index] = task;
-                } else {
-                    updatedTasks = [...tasks, task];
+                try {
+                    if (!task.description?.trim()) {
+                        alert('Task description is required.');
+                        return;
+                    }
+
+                    const index = tasks.findIndex(t => t.id === task.id);
+                    let updatedTasks;
+                    if (index >= 0) {
+                        updatedTasks = [...tasks];
+                        updatedTasks[index] = task;
+                    } else {
+                        updatedTasks = [...tasks, task];
+                    }
+                    updateData('tasks', updatedTasks);
+                    setShowModal(false);
+                    setEditingTask(null);
+                } catch (error) {
+                    console.error('Error saving task:', error);
+                    alert(`Failed to save task: ${error.message}`);
                 }
-                updateData('tasks', updatedTasks);
-                setShowModal(false);
-                setEditingTask(null);
             };
 
             const handleDelete = (id) => {
@@ -1660,92 +2319,130 @@
         // ==================== MENUS COMPONENT ====================
 
         const Menus = ({ menus, updateData }) => {
-            const [selectedEvent, setSelectedEvent] = useState(menus[0]?.event || 'Mehendi');
-            const [showModal, setShowModal] = useState(false);
+            const [showEventModal, setShowEventModal] = useState(false);
+            const [showItemModal, setShowItemModal] = useState(false);
+            const [editingEvent, setEditingEvent] = useState(null);
             const [editingItem, setEditingItem] = useState(null);
+            const [selectedEventId, setSelectedEventId] = useState(null);
 
-            const currentMenu = useMemo(() => {
-                return menus.find(m => m.event === selectedEvent) || { event: selectedEvent, items: [] };
-            }, [menus, selectedEvent]);
+            const handleAddEvent = () => {
+                setEditingEvent({ id: generateId(), name: '', guestsBooked: 0, guestsAttended: 0, items: [] });
+                setShowEventModal(true);
+            };
+
+            const handleEditEvent = (event) => {
+                setEditingEvent({ ...event });
+                setShowEventModal(true);
+            };
+
+            const handleSaveEvent = (event) => {
+                if (!event.name?.trim()) {
+                    alert('Event name is required.');
+                    return;
+                }
+                const updatedMenus = [...menus];
+                const idx = updatedMenus.findIndex(m => m.id === event.id);
+                if (idx >= 0) {
+                    updatedMenus[idx] = event;
+                } else {
+                    updatedMenus.push(event);
+                }
+                updateData('menus', updatedMenus);
+                setShowEventModal(false);
+                setEditingEvent(null);
+            };
+
+            const handleDeleteEvent = (id) => {
+                if (confirm('Delete this event and all its menu items?')) {
+                    updateData('menus', menus.filter(m => m.id !== id));
+                    if (selectedEventId === id) setSelectedEventId(null);
+                }
+            };
 
             const handleAddItem = () => {
-                setEditingItem({ name: '', quantity: 0 });
-                setShowModal(true);
+                setEditingItem({ name: '', platePrice: 0 });
+                setShowItemModal(true);
             };
 
             const handleSaveItem = (item) => {
-                const updatedMenus = [...menus];
-                const menuIndex = updatedMenus.findIndex(m => m.event === selectedEvent);
-                
-                if (menuIndex >= 0) {
-                    updatedMenus[menuIndex].items.push(item);
-                } else {
-                    updatedMenus.push({ event: selectedEvent, items: [item] });
+                if (!item.name?.trim()) {
+                    alert('Item name is required.');
+                    return;
                 }
-                
-                updateData('menus', updatedMenus);
-                setShowModal(false);
+                const updatedMenus = [...menus];
+                const eventIdx = updatedMenus.findIndex(m => m.id === selectedEventId);
+                if (eventIdx >= 0) {
+                    updatedMenus[eventIdx].items.push(item);
+                    updateData('menus', updatedMenus);
+                }
+                setShowItemModal(false);
                 setEditingItem(null);
             };
 
-            const handleDeleteItem = (itemIndex) => {
+            const handleDeleteItem = (itemIdx) => {
                 if (confirm('Delete this menu item?')) {
                     const updatedMenus = [...menus];
-                    const menuIndex = updatedMenus.findIndex(m => m.event === selectedEvent);
-                    if (menuIndex >= 0) {
-                        updatedMenus[menuIndex].items.splice(itemIndex, 1);
+                    const eventIdx = updatedMenus.findIndex(m => m.id === selectedEventId);
+                    if (eventIdx >= 0) {
+                        updatedMenus[eventIdx].items.splice(itemIdx, 1);
                         updateData('menus', updatedMenus);
                     }
                 }
             };
 
-            const ceremonies = ['Mehendi', 'Sangeet', 'Haldi', 'Shaadi', 'Reception', 'Vidai'];
+            const handleBulkSetMenu = () => {
+                if (!selectedEventId) return;
+                const itemsText = prompt('Enter menu items (one per line, format: "Item Name, Price")');
+                if (!itemsText) return;
+                const lines = itemsText.split('\n').filter(l => l.trim());
+                const items = lines.map(line => {
+                    const [name, price] = line.split(',').map(s => s.trim());
+                    return { name, platePrice: parseFloat(price) || 0 };
+                }).filter(i => i.name);
+                const updatedMenus = [...menus];
+                const eventIdx = updatedMenus.findIndex(m => m.id === selectedEventId);
+                if (eventIdx >= 0) {
+                    updatedMenus[eventIdx].items = [...updatedMenus[eventIdx].items, ...items];
+                    updateData('menus', updatedMenus);
+                }
+            };
+
+            const selectedEvent = menus.find(m => m.id === selectedEventId);
+            const totalCost = selectedEvent?.items.reduce((sum, item) => sum + (item.platePrice * (selectedEvent.guestsAttended || 0)), 0) || 0;
 
             return (
                 <div>
                     <div className="card">
-                        <h2 className="card-title">Event Menus</h2>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-                            {ceremonies.map(ceremony => (
-                                <button
-                                    key={ceremony}
-                                    className={`btn ${selectedEvent === ceremony ? 'btn-primary' : 'btn-outline'} btn-small`}
-                                    onClick={() => setSelectedEvent(ceremony)}
-                                >
-                                    {ceremony}
-                                </button>
-                            ))}
+                        <div className="flex-between">
+                            <h2 className="card-title">Event Menus</h2>
+                            <button className="btn btn-primary" onClick={handleAddEvent}>Add Event</button>
                         </div>
                     </div>
 
                     <div className="card">
-                        <div className="flex-between">
-                            <h3 className="card-title">{selectedEvent} Menu</h3>
-                            <button className="btn btn-primary" onClick={handleAddItem}>Add Item</button>
-                        </div>
-                        
-                        {currentMenu.items && currentMenu.items.length > 0 ? (
+                        <h3>Events</h3>
+                        {menus.length > 0 ? (
                             <div className="table-container">
                                 <table className="table">
                                     <thead>
                                         <tr>
-                                            <th>Item Name</th>
-                                            <th>Quantity</th>
+                                            <th>Event</th>
+                                            <th>Guests Booked</th>
+                                            <th>Guests Attended</th>
+                                            <th>Menu Items</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {currentMenu.items.map((item, idx) => (
-                                            <tr key={idx}>
-                                                <td><strong>{item.name}</strong></td>
-                                                <td>{item.quantity} servings</td>
+                                        {menus.map(event => (
+                                            <tr key={event.id} style={{ cursor: 'pointer', background: selectedEventId === event.id ? 'var(--color-bg-secondary)' : 'transparent' }} onClick={() => setSelectedEventId(event.id)}>
+                                                <td><strong>{event.name}</strong></td>
+                                                <td>{event.guestsBooked || 0}</td>
+                                                <td>{event.guestsAttended || 0}</td>
+                                                <td>{event.items?.length || 0} items</td>
                                                 <td>
-                                                    <button 
-                                                        className="btn btn-danger btn-small"
-                                                        onClick={() => handleDeleteItem(idx)}
-                                                    >
-                                                        Delete
-                                                    </button>
+                                                    <button className="btn btn-outline btn-small" onClick={(e) => { e.stopPropagation(); handleEditEvent(event); }}>Edit</button>
+                                                    <button className="btn btn-danger btn-small" onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}>Delete</button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -1755,25 +2452,99 @@
                         ) : (
                             <div className="empty-state">
                                 <div className="empty-state-icon">🍽️</div>
-                                <p>No menu items added for {selectedEvent}</p>
+                                <p>No events added</p>
                             </div>
                         )}
                     </div>
 
-                    {showModal && (
-                        <MenuItemModal
-                            item={editingItem}
-                            onSave={handleSaveItem}
-                            onClose={() => { setShowModal(false); setEditingItem(null); }}
-                        />
+                    {selectedEvent && (
+                        <div className="card">
+                            <div className="flex-between">
+                                <h3>{selectedEvent.name} - Menu</h3>
+                                <div>
+                                    <button className="btn btn-outline btn-small" onClick={handleBulkSetMenu}>Bulk Add</button>
+                                    <button className="btn btn-primary btn-small" onClick={handleAddItem}>Add Item</button>
+                                </div>
+                            </div>
+                            <p style={{ marginTop: '8px' }}><strong>Total Cost:</strong> {formatCurrency(totalCost)}</p>
+                            {selectedEvent.items?.length > 0 ? (
+                                <div className="table-container">
+                                    <table className="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Plate Price</th>
+                                                <th>Total Cost</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedEvent.items.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td><strong>{item.name}</strong></td>
+                                                    <td>{formatCurrency(item.platePrice || 0)}</td>
+                                                    <td>{formatCurrency((item.platePrice || 0) * (selectedEvent.guestsAttended || 0))}</td>
+                                                    <td>
+                                                        <button className="btn btn-danger btn-small" onClick={() => handleDeleteItem(idx)}>Delete</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">🍽️</div>
+                                    <p>No menu items</p>
+                                </div>
+                            )}
+                        </div>
                     )}
+
+                    {showEventModal && (
+                        <EventModal event={editingEvent} onSave={handleSaveEvent} onClose={() => { setShowEventModal(false); setEditingEvent(null); }} />
+                    )}
+                    {showItemModal && (
+                        <MenuItemModal item={editingItem} onSave={handleSaveItem} onClose={() => { setShowItemModal(false); setEditingItem(null); }} />
+                    )}
+                </div>
+            );
+        };
+
+        const EventModal = ({ event, onSave, onClose }) => {
+            const [formData, setFormData] = useState(event);
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">{event.name ? 'Edit Event' : 'Add Event'}</h3>
+                            <button className="modal-close" onClick={onClose}>&times;</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label className="form-label">Event Name *</label>
+                                <input type="text" className="form-input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Guests Booked</label>
+                                <input type="number" className="form-input" value={formData.guestsBooked} onChange={e => setFormData({ ...formData, guestsBooked: parseInt(e.target.value) || 0 })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Guests Attended</label>
+                                <input type="number" className="form-input" value={formData.guestsAttended} onChange={e => setFormData({ ...formData, guestsAttended: parseInt(e.target.value) || 0 })} />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-outline" onClick={onClose}>Cancel</button>
+                            <button className="btn btn-primary" onClick={() => onSave(formData)} disabled={!formData.name}>Save</button>
+                        </div>
+                    </div>
                 </div>
             );
         };
 
         const MenuItemModal = ({ item, onSave, onClose }) => {
             const [formData, setFormData] = useState(item);
-
             return (
                 <div className="modal-overlay" onClick={onClose}>
                     <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
@@ -1784,34 +2555,16 @@
                         <div className="modal-body">
                             <div className="form-group">
                                 <label className="form-label">Item Name *</label>
-                                <input 
-                                    type="text"
-                                    className="form-input"
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="e.g., Paneer Tikka"
-                                    required
-                                />
+                                <input type="text" className="form-input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., Paneer Tikka" />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Quantity (servings)</label>
-                                <input 
-                                    type="number"
-                                    className="form-input"
-                                    value={formData.quantity}
-                                    onChange={e => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                                />
+                                <label className="form-label">Plate Price (₹)</label>
+                                <input type="number" className="form-input" value={formData.platePrice} onChange={e => setFormData({ ...formData, platePrice: parseFloat(e.target.value) || 0 })} />
                             </div>
                         </div>
                         <div className="modal-footer">
                             <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-                            <button 
-                                className="btn btn-primary" 
-                                onClick={() => onSave(formData)}
-                                disabled={!formData.name}
-                            >
-                                Add Item
-                            </button>
+                            <button className="btn btn-primary" onClick={() => onSave(formData)} disabled={!formData.name}>Add</button>
                         </div>
                     </div>
                 </div>
@@ -1836,26 +2589,46 @@
             };
 
             const handleSave = (item) => {
-                const updatedTravel = { ...travel };
-                
-                if (item.type === 'accommodation') {
-                    updatedTravel.accommodations = [...(updatedTravel.accommodations || []), {
-                        hotel: item.hotel,
-                        checkIn: item.checkIn,
-                        checkOut: item.checkOut,
-                        guests: item.guests
-                    }];
-                } else {
-                    updatedTravel.transport = [...(updatedTravel.transport || []), {
-                        type: item.transportType,
-                        details: item.details,
-                        date: item.date
-                    }];
+                try {
+                    const errors = validateTravelItem(item, item.type);
+                    if (errors) {
+                        const errorMsg = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join('\n');
+                        alert(`Please fix the following errors:\n\n${errorMsg}`);
+                        return;
+                    }
+
+                    const updatedTravel = { ...travel };
+                    
+                    if (item.type === 'accommodation') {
+                        if (!item.hotel?.trim()) {
+                            alert('Hotel name is required.');
+                            return;
+                        }
+                        updatedTravel.accommodations = [...(updatedTravel.accommodations || []), {
+                            hotel: item.hotel,
+                            checkIn: item.checkIn,
+                            checkOut: item.checkOut,
+                            guests: item.guests || []
+                        }];
+                    } else {
+                        if (!item.details?.trim()) {
+                            alert('Transport details are required.');
+                            return;
+                        }
+                        updatedTravel.transport = [...(updatedTravel.transport || []), {
+                            type: item.transportType,
+                            details: item.details,
+                            date: item.date
+                        }];
+                    }
+                    
+                    updateData('travel', updatedTravel);
+                    setShowModal(false);
+                    setEditingItem(null);
+                } catch (error) {
+                    console.error('Error saving travel item:', error);
+                    alert(`Failed to save travel item: ${error.message}`);
                 }
-                
-                updateData('travel', updatedTravel);
-                setShowModal(false);
-                setEditingItem(null);
             };
 
             const handleDeleteAccommodation = (index) => {
@@ -2165,18 +2938,38 @@
             };
 
             const handleSave = (item) => {
-                const newShopping = { ...shopping };
-                const categoryItems = newShopping[activeCategory].find(e => e.event === editingEvent);
-                
-                if (editingItem) {
-                    const index = categoryItems.items.findIndex(i => i.item === editingItem.item);
-                    categoryItems.items[index] = item;
-                } else {
-                    categoryItems.items.push(item);
+                try {
+                    if (!item.item?.trim()) {
+                        alert('Item name is required.');
+                        return;
+                    }
+
+                    const newShopping = { ...shopping };
+                    const categoryItems = newShopping[activeCategory].find(e => e.event === editingEvent);
+                    
+                    if (!categoryItems) {
+                        alert(`Event "${editingEvent}" not found in ${activeCategory} category.`);
+                        return;
+                    }
+
+                    if (editingItem) {
+                        const index = categoryItems.items.findIndex(i => i.item === editingItem.item);
+                        if (index >= 0) {
+                            categoryItems.items[index] = item;
+                        } else {
+                            alert('Original item not found. Adding as new item.');
+                            categoryItems.items.push(item);
+                        }
+                    } else {
+                        categoryItems.items.push(item);
+                    }
+                    
+                    updateData('shopping', newShopping);
+                    setShowModal(false);
+                } catch (error) {
+                    console.error('Error saving shopping item:', error);
+                    alert(`Failed to save shopping item: ${error.message}`);
                 }
-                
-                updateData('shopping', newShopping);
-                setShowModal(false);
             };
 
             const totalBudget = Object.values(shopping).reduce((sum, category) => 
@@ -2469,19 +3262,35 @@
             };
 
             const handleExport = () => {
-                const dataStr = JSON.stringify(allData, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `wedding-planner-backup-${new Date().toISOString().split('T')[0]}.json`;
-                link.click();
-                URL.revokeObjectURL(url);
+                try {
+                    if (!allData || typeof allData !== 'object') {
+                        alert('No data available to export.');
+                        return;
+                    }
+
+                    const dataStr = JSON.stringify(allData, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `wedding-planner-backup-${new Date().toISOString().split('T')[0]}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('Export error:', error);
+                    alert(`Failed to export data: ${error.message}`);
+                }
             };
 
             const handleImport = async (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
+
+                if (!file.name.endsWith('.json')) {
+                    alert('Please select a valid JSON file.');
+                    event.target.value = '';
+                    return;
+                }
 
                 if (!confirm('This will replace all current data. Are you sure?')) {
                     event.target.value = '';
@@ -2492,14 +3301,33 @@
                 reader.onload = async (e) => {
                     try {
                         const importedData = JSON.parse(e.target.result);
+                        
+                        // Validate imported data structure
+                        const requiredKeys = ['weddingInfo', 'timeline', 'guests', 'vendors', 'budget', 'tasks', 'menus', 'travel'];
+                        const missingKeys = requiredKeys.filter(key => !importedData[key]);
+                        
+                        if (missingKeys.length > 0) {
+                            alert(`Invalid data file. Missing required fields: ${missingKeys.join(', ')}`);
+                            event.target.value = '';
+                            return;
+                        }
+
                         await saveData(importedData);
                         setData(importedData);
                         setFormData(importedData.weddingInfo);
                         alert('Data imported successfully!');
                     } catch (error) {
-                        alert('Error importing data. Please check the file format.');
+                        if (error instanceof SyntaxError) {
+                            alert('Invalid JSON file. Please check the file format.');
+                        } else {
+                            alert(`Error importing data: ${error.message}`);
+                        }
                         console.error('Import error:', error);
                     }
+                    event.target.value = '';
+                };
+                reader.onerror = () => {
+                    alert('Failed to read file. Please try again.');
                     event.target.value = '';
                 };
                 reader.readAsText(file);

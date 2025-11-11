@@ -14,8 +14,7 @@
     <!-- PWA manifest and icons -->
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+    <link rel="icon" href="/icons/icon-152x152.png">
     
     <!-- React 18 and Babel from CDN with specific versions -->
     <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
@@ -27,6 +26,7 @@
 <body>
     <div id="root"></div>
 
+    <script src="/env.js"></script>
     <script defer type="text/babel" src="/db.js"></script>
     <script defer type="text/babel" src="/storage.js"></script>
     <script defer type="text/babel" src="/scr.js"></script>
