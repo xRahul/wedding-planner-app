@@ -396,75 +396,7 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
             );
         };
 
-        // Reusable SelectOrAdd component
-        const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
-            const [isAdding, setIsAdding] = useState(false);
-            const [newValue, setNewValue] = useState('');
 
-            const handleAdd = () => {
-                if (newValue.trim()) {
-                    onChange(newValue.trim());
-                    setNewValue('');
-                    setIsAdding(false);
-                }
-            };
-
-            return (
-                <div className="form-group">
-                    <label className="form-label">{label}</label>
-                    {!isAdding ? (
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <select 
-                                className="form-select"
-                                value={value}
-                                onChange={e => onChange(e.target.value)}
-                                style={{ flex: 1 }}
-                            >
-                                <option value="">Select {label}</option>
-                                {options.map(opt => (
-                                    <option key={opt} value={opt}>
-                                        {opt.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                    </option>
-                                ))}
-                            </select>
-                            <button 
-                                type="button"
-                                className="btn btn-outline btn-small"
-                                onClick={() => setIsAdding(true)}
-                            >
-                                + Add New
-                            </button>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <input 
-                                type="text"
-                                className="form-input"
-                                value={newValue}
-                                onChange={e => setNewValue(e.target.value)}
-                                placeholder={placeholder || `Enter new ${label.toLowerCase()}`}
-                                style={{ flex: 1 }}
-                                onKeyPress={e => e.key === 'Enter' && handleAdd()}
-                            />
-                            <button 
-                                type="button"
-                                className="btn btn-primary btn-small"
-                                onClick={handleAdd}
-                            >
-                                Add
-                            </button>
-                            <button 
-                                type="button"
-                                className="btn btn-outline btn-small"
-                                onClick={() => { setIsAdding(false); setNewValue(''); }}
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    )}
-                </div>
-            );
-        };
 
         const GuestModal = ({ guest, onSave, onClose, savedCategories, savedRelations, savedDietary, savedFamilyRelations, onUpdateCategories, onUpdateRelations, onUpdateDietary, onUpdateFamilyRelations }) => {
             const [formData, setFormData] = useState(guest || { type: 'single', familyMembers: [] });
