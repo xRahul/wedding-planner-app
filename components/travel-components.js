@@ -4,6 +4,7 @@ const { useState, useEffect, useMemo } = React;
         const Travel = ({ travel, updateData, budget }) => {
             const [showModal, setShowModal] = useState(false);
             const [editingItem, setEditingItem] = useState(null);
+            const [showAnalytics, setShowAnalytics] = useState(false);
 
             const handleAddTransport = () => {
                 setEditingItem({ 
@@ -79,7 +80,12 @@ const { useState, useEffect, useMemo } = React;
                     <div className="card">
                         <div className="flex-between">
                             <h2 className="card-title">🚌 Transport Arrangements</h2>
-                            <button className="btn btn-primary" onClick={handleAddTransport}>Add Transport</button>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="btn btn-outline btn-small" onClick={() => setShowAnalytics(!showAnalytics)}>
+                                    {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
+                                </button>
+                                <button className="btn btn-primary" onClick={handleAddTransport}>Add Transport</button>
+                            </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '16px' }}>
                             <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
@@ -115,6 +121,8 @@ const { useState, useEffect, useMemo } = React;
                             </div>
                         </div>
                     </div>
+
+                    {showAnalytics && <TravelAnalytics travel={travel} />}
 
                     <div className="card">
                         {travel.transport && travel.transport.length > 0 ? (

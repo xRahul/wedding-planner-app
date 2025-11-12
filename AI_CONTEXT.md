@@ -34,7 +34,7 @@ COMPREHENSIVE TECHNICAL REFERENCE FOR AI ASSISTANTS - All critical patterns, dat
     groomName: "",
     weddingDate: "",
     location: "",
-    totalBudget: 0,
+    totalBudget: 0, // Auto-calculated: brideBudget + groomBudget
     brideBudget: 0,
     groomBudget: 0
   },
@@ -86,7 +86,8 @@ COMPREHENSIVE TECHNICAL REFERENCE FOR AI ASSISTANTS - All critical patterns, dat
   travel: {
     transport: [
       { 
-        id, vehicleType, fromDate, toDate, seats, route, totalPrice, budgetCategory, notes,
+        id, vehicleType, vehicleName, fromDate, toDate, seats, route, totalPrice, budgetCategory, 
+        kilometers, driverName, driverContact, notes,
         paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
       }
     ]
@@ -98,15 +99,18 @@ COMPREHENSIVE TECHNICAL REFERENCE FOR AI ASSISTANTS - All critical patterns, dat
   },
   giftsAndFavors: {
     familyGifts: [{ 
-      id, recipientName, ceremony, giftItem, estimatedCost, actualCost, budgetCategory, status: 'purchased'|'pending',
+      id, event, giftName, recipient, quantity, pricePerGift, totalCost, budgetCategory, 
+      status: 'pending'|'ordered'|'purchased'|'delivered', purchasedFrom, notes,
       paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
     }],
     returnGifts: [{ 
-      id, giftItem, quantity, costPerItem, totalCost, budgetCategory, status,
+      id, event, giftName, recipient, quantity, pricePerGift, totalCost, budgetCategory,
+      status: 'pending'|'ordered'|'purchased'|'delivered', purchasedFrom, notes,
       paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
     }],
     specialGifts: [{ 
-      id, recipientName, occasion, giftItem, cost, budgetCategory, status,
+      id, event, giftName, recipient, quantity, pricePerGift, totalCost, budgetCategory,
+      status: 'pending'|'ordered'|'purchased'|'delivered', purchasedFrom, notes,
       paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
     }]
   },
@@ -455,6 +459,10 @@ const WeddingPlannerApp = () => {
   useEffect(() => { /* saveData(data) */ }, [data, loading]);
 
   const updateData = (key, value) => {
+    // Auto-calculate totalBudget when weddingInfo is updated
+    if (key === 'weddingInfo') {
+      value.totalBudget = (value.brideBudget || 0) + (value.groomBudget || 0);
+    }
     setData({ ...data, [key]: value });
   };
 
@@ -469,13 +477,13 @@ const WeddingPlannerApp = () => {
         {activeTab === 'timeline' && <Timeline timeline={data.timeline} updateData={updateData} weddingDate={data.weddingInfo.weddingDate} />}
         {activeTab === 'guests' && <Guests guests={data.guests} updateData={updateData} data={data} />}
         {activeTab === 'vendors' && <Vendors vendors={data.vendors} updateData={updateData} budget={data.budget} />}
-        {activeTab === 'budget' && <Budget budget={data.budget} updateData={updateData} totalBudget={data.weddingInfo.totalBudget} />}
+        {activeTab === 'budget' && <Budget budget={data.budget} updateData={updateData} totalBudget={data.weddingInfo.totalBudget} allData={data} />}
         {activeTab === 'tasks' && <Tasks tasks={data.tasks} updateData={updateData} />}
-        {activeTab === 'menus' && <Menus menus={data.menus} updateData={updateData} />}
-        {activeTab === 'shopping' && <Shopping shopping={data.shopping} updateData={updateData} />}
+        {activeTab === 'menus' && <Menus menus={data.menus} updateData={updateData} budget={data.budget} />}
+        {activeTab === 'shopping' && <Shopping shopping={data.shopping} updateData={updateData} budget={data.budget} />}
         {activeTab === 'rituals' && <Rituals ritualsAndCustoms={data.ritualsAndCustoms} traditions={data.traditions} updateData={updateData} />}
-        {activeTab === 'gifts' && <Gifts giftsAndFavors={data.giftsAndFavors} updateData={updateData} />}
-        {activeTab === 'travel' && <Travel travel={data.travel} updateData={updateData} />}
+        {activeTab === 'gifts' && <Gifts giftsAndFavors={data.giftsAndFavors} updateData={updateData} budget={data.budget} />}
+        {activeTab === 'travel' && <Travel travel={data.travel} updateData={updateData} budget={data.budget} />}
         {activeTab === 'settings' && <Settings weddingInfo={data.weddingInfo} updateData={updateData} allData={data} setData={setData} showNotification={showNotification} />}
       </main>
     </div>
@@ -614,8 +622,47 @@ const validateMyData = (item) => {
 - [ ] Mobile responsive
 - [ ] PWA installs and works offline
 
+## GIFTS COMPONENT SPECIFICS
+
+**Three Gift Categories**: Family Gifts, Return Gifts, Special Gifts
+
+**Analytics Tab**: Traditional North Indian guidelines (Shagun amounts, gold coins, dry fruits, silver items) and budget summary
+
+**Common Gifts by Category**:
+- Family: Shagun Envelope, Gold/Silver Coins, Jewelry Set, Saree/Suit, Sherwani/Kurta, Watch, Dry Fruits Box, Sweets Box, Coconut with Supari, Chunri with Shagun, Paan Supari Set
+- Return: Dry Fruits Box, Sweets Box, Decorative Diyas, Photo Frame, Scented Candles, Chocolate Box, Brass Items, Silver Plated Items, Personalized Mugs, Plant Saplings, Eco-friendly Bags
+- Special: Gold Jewelry, Diamond Jewelry, Luxury Watch, Designer Saree, Designer Sherwani, Car, Property Documents, Cash/Cheque, Electronics, Furniture, Home Appliances
+
+**Custom Events**: Uses customGiftEvents array for user-defined events beyond default North Indian ceremonies
+
+**Auto-Calculation**: totalCost = quantity × pricePerGift
+
+## SHOPPING COMPONENT SPECIFICS
+
+**Three Categories**: Bride, Groom, Family - each with multiple events
+
+**Shopping Templates**: Pre-built shopping lists by event:
+- Bride: Mehendi (Lehenga, Jewelry), Sangeet (Outfit, Dancing Shoes), Wedding (Bridal Lehenga, Jewelry Set), Reception (Gown/Saree, Jewelry)
+- Groom: Sangeet (Kurta, Mojaris), Wedding (Sherwani, Sehra, Kalgi), Reception (Suit)
+- Family: General (Coordination Outfits, Gift Wrapping Supplies)
+
+**Status Tracking**: pending → ordered → received → completed
+
+## TRAVEL COMPONENT SPECIFICS
+
+**Vehicle Types**: bus, car, van, tempo_traveller, luxury_coach, suv, sedan
+
+**Travel Templates**: Common transport options (AC Bus for Baraat, Luxury Coach, Tempo Traveller) with one-click addition
+
+**Stats Displayed**: Total Cost, Total Distance (km), Total Vehicles, Total Seats, Cost per KM, Cost per Seat
+
+**Driver Information**: driverName, driverContact fields for each vehicle
+
+**Route Planning**: route field for pickup/drop locations
+
 ## VERSION HISTORY
 
+**v2.5.0**: Auto-budget calculation (totalBudget = brideBudget + groomBudget), gift analytics tab with traditional guidelines, shopping templates by event, travel templates with common options, enhanced gift/travel data structure
 **v2.4.0**: Payment responsibility tracking (bride/groom/split) for vendors, menus, gifts, shopping, travel; bride/groom budget tracking; budget auto-calculation from linked items; menu item editing with payment tracking
 **v2.3.0**: Budget category support for menus (events + items), gifts (all types), shopping (all items), travel; menu item editing
 **v2.2.0**: Dietary simplified to veg/jain only, notification system with auto-dismiss, guest table improvements, skip link fix

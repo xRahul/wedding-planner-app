@@ -6,6 +6,39 @@ const Gifts = ({ giftsAndFavors, updateData, budget }) => {
     const [activeTab, setActiveTab] = useState('family');
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [showAnalytics, setShowAnalytics] = useState(false);
+
+    const giftStats = useMemo(() => {
+        const allGifts = [...(giftsAndFavors.familyGifts || []), ...(giftsAndFavors.returnGifts || []), ...(giftsAndFavors.specialGifts || [])];
+        const totalCost = allGifts.reduce((sum, g) => sum + (g.totalCost || 0), 0);
+        const totalQuantity = allGifts.reduce((sum, g) => sum + (g.quantity || 0), 0);
+        const purchased = allGifts.filter(g => g.status === 'purchased' || g.status === 'delivered').length;
+        const pending = allGifts.filter(g => g.status === 'pending').length;
+        
+        const byPayment = { bride: 0, groom: 0, split: 0, pending: 0 };
+        allGifts.forEach(g => {
+            const cost = g.totalCost || 0;
+            if (g.paymentResponsibility === 'bride') byPayment.bride += cost;
+            else if (g.paymentResponsibility === 'groom') byPayment.groom += cost;
+            else if (g.paymentResponsibility === 'split') byPayment.split += cost;
+            else byPayment.pending += cost;
+        });
+        
+        const byEvent = {};
+        allGifts.forEach(g => {
+            if (g.event) {
+                if (!byEvent[g.event]) byEvent[g.event] = { count: 0, cost: 0 };
+                byEvent[g.event].count++;
+                byEvent[g.event].cost += g.totalCost || 0;
+            }
+        });
+        const topEvents = Object.entries(byEvent).sort((a, b) => b[1].cost - a[1].cost).slice(0, 5);
+        
+        const avgCostPerGift = allGifts.length > 0 ? totalCost / allGifts.length : 0;
+        const completionRate = allGifts.length > 0 ? (purchased / allGifts.length * 100) : 0;
+        
+        return { totalCost, totalQuantity, purchased, pending, byPayment, byEvent, topEvents, avgCostPerGift, completionRate, totalItems: allGifts.length };
+    }, [giftsAndFavors]);
 
     const handleAdd = (category) => {
         setEditingItem({ 
@@ -96,8 +129,95 @@ const Gifts = ({ giftsAndFavors, updateData, budget }) => {
                     >
                         📊 Analytics
                     </button>
+                    <button className="btn btn-outline btn-small" onClick={() => setShowAnalytics(!showAnalytics)}>
+                        {showAnalytics ? '📈 Hide Stats' : '📈 Show Stats'}
+                    </button>
                 </div>
             </div>
+
+            {showAnalytics && activeTab !== 'analytics' && (
+                <div className="card">
+                    <h3>📈 Gift Statistics</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '16px', marginBottom: '16px' }}>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{giftStats.totalItems}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Gifts</div>
+                        </div>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{giftStats.totalQuantity}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Quantity</div>
+                        </div>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatCurrency(giftStats.totalCost)}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Cost</div>
+                        </div>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatCurrency(giftStats.avgCostPerGift)}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Avg per Gift</div>
+                        </div>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-success)' }}>{giftStats.completionRate.toFixed(0)}%</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Completion Rate</div>
+                        </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                        <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>👰🤵 Payment Split</h4>
+                            <div style={{ fontSize: '13px', lineHeight: '1.8' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>👰 Bride:</span>
+                                    <strong>{formatCurrency(giftStats.byPayment.bride)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>🤵 Groom:</span>
+                                    <strong>{formatCurrency(giftStats.byPayment.groom)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>🤝 Split:</span>
+                                    <strong>{formatCurrency(giftStats.byPayment.split)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>⏳ Pending:</span>
+                                    <strong style={{ color: 'var(--color-warning)' }}>{formatCurrency(giftStats.byPayment.pending)}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>📦 Status Breakdown</h4>
+                            <div style={{ fontSize: '13px', lineHeight: '1.8' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>✅ Purchased:</span>
+                                    <strong style={{ color: 'var(--color-success)' }}>{giftStats.purchased}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>⏳ Pending:</span>
+                                    <strong style={{ color: 'var(--color-warning)' }}>{giftStats.pending}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Progress:</span>
+                                    <strong>{giftStats.purchased}/{giftStats.totalItems}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {giftStats.topEvents.length > 0 && (
+                            <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>🎉 Top Events by Cost</h4>
+                                <div style={{ fontSize: '13px', lineHeight: '1.8' }}>
+                                    {giftStats.topEvents.slice(0, 3).map(([event, info]) => (
+                                        <div key={event} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                            <span>{event}:</span>
+                                            <strong>{formatCurrency(info.cost)}</strong>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {activeTab === 'family' && (
                 <div className="card">

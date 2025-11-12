@@ -5,6 +5,7 @@ const { useState, useEffect, useMemo } = React;
 const Vendors = ({ vendors, updateData, budget }) => {
     const { showModal, editing: editingVendor, handleAdd, handleEdit, handleSave, handleDelete, closeModal } = useCRUD(vendors, updateData, 'vendors', validateVendor);
     const [filteredVendors, filter, setFilter] = useFilter(vendors, (v, f) => v.type === f || v.status === f);
+    const [showAnalytics, setShowAnalytics] = useState(false);
 
     const vendorStats = useMemo(() => {
         const totalCost = vendors.reduce((sum, v) => sum + (v.finalCost || v.estimatedCost || 0), 0);
@@ -15,17 +16,46 @@ const Vendors = ({ vendors, updateData, budget }) => {
         const avgRating = vendors.filter(v => v.rating > 0).length > 0 ? 
             vendors.reduce((sum, v) => sum + (v.rating || 0), 0) / vendors.filter(v => v.rating > 0).length : 0;
         
-        return { totalCost, advancePaid, pendingPayment, confirmedVendors, bookedVendors, avgRating };
+        const byType = {};
+        vendors.forEach(v => {
+            if (!byType[v.type]) byType[v.type] = { count: 0, cost: 0, confirmed: 0 };
+            byType[v.type].count++;
+            byType[v.type].cost += v.finalCost || v.estimatedCost || 0;
+            if (v.status === 'confirmed') byType[v.type].confirmed++;
+        });
+        const topTypes = Object.entries(byType).sort((a, b) => b[1].cost - a[1].cost).slice(0, 5);
+        
+        const byPayment = { bride: 0, groom: 0, split: 0, pending: 0 };
+        vendors.forEach(v => {
+            const cost = v.finalCost || v.estimatedCost || 0;
+            if (v.paymentResponsibility === 'bride') byPayment.bride += cost;
+            else if (v.paymentResponsibility === 'groom') byPayment.groom += cost;
+            else if (v.paymentResponsibility === 'split') byPayment.split += cost;
+            else byPayment.pending += cost;
+        });
+        
+        const costVariance = vendors.reduce((sum, v) => {
+            if (v.finalCost && v.estimatedCost) return sum + (v.finalCost - v.estimatedCost);
+            return sum;
+        }, 0);
+        const avgCostPerVendor = vendors.length > 0 ? totalCost / vendors.length : 0;
+        
+        return { totalCost, advancePaid, pendingPayment, confirmedVendors, bookedVendors, avgRating, byType, topTypes, byPayment, costVariance, avgCostPerVendor };
     }, [vendors]);
 
     return (
         <div>
             <Card title={`Vendors (${vendors.length} total)`} action={
-                <button className="btn btn-primary" onClick={() => handleAdd({
-                    type: 'decorator', name: '', contact: '', email: '', estimatedCost: 0,
-                    finalCost: 0, status: 'pending', availability: [], bookedDate: '', notes: '',
-                    advancePaid: 0, paymentStatus: 'pending', rating: 0, reviews: '', budgetCategory: ''
-                })}>Add Vendor</button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn btn-outline btn-small" onClick={() => setShowAnalytics(!showAnalytics)}>
+                        {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
+                    </button>
+                    <button className="btn btn-primary" onClick={() => handleAdd({
+                        type: 'decorator', name: '', contact: '', email: '', estimatedCost: 0,
+                        finalCost: 0, status: 'pending', availability: [], bookedDate: '', notes: '',
+                        advancePaid: 0, paymentStatus: 'pending', rating: 0, reviews: '', budgetCategory: ''
+                    })}>Add Vendor</button>
+                </div>
             }>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '16px' }}>
                     <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
@@ -59,6 +89,95 @@ const Vendors = ({ vendors, updateData, budget }) => {
                     ))}
                 </div>
             </Card>
+
+            {showAnalytics && (
+                <Card title="📊 Vendor Analytics">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                        <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>💰 Cost Analysis</h4>
+                            <div style={{ fontSize: '13px', lineHeight: '1.8' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Avg per vendor:</span>
+                                    <strong>{formatCurrency(vendorStats.avgCostPerVendor)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Cost variance:</span>
+                                    <strong style={{ color: vendorStats.costVariance > 0 ? 'var(--color-error)' : 'var(--color-success)' }}>
+                                        {vendorStats.costVariance > 0 ? '+' : ''}{formatCurrency(vendorStats.costVariance)}
+                                    </strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Payment rate:</span>
+                                    <strong>{vendorStats.totalCost > 0 ? ((vendorStats.advancePaid / vendorStats.totalCost) * 100).toFixed(1) : 0}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>👰🤵 Payment Split</h4>
+                            <div style={{ fontSize: '13px', lineHeight: '1.8' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>👰 Bride:</span>
+                                    <strong>{formatCurrency(vendorStats.byPayment.bride)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>🤵 Groom:</span>
+                                    <strong>{formatCurrency(vendorStats.byPayment.groom)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>🤝 Split:</span>
+                                    <strong>{formatCurrency(vendorStats.byPayment.split)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>⏳ Pending:</span>
+                                    <strong style={{ color: 'var(--color-warning)' }}>{formatCurrency(vendorStats.byPayment.pending)}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>✅ Confirmation Status</h4>
+                            <div style={{ fontSize: '13px', lineHeight: '1.8' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Confirmed:</span>
+                                    <strong style={{ color: 'var(--color-success)' }}>{vendorStats.confirmedVendors}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Booked:</span>
+                                    <strong style={{ color: 'var(--color-info)' }}>{vendorStats.bookedVendors}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Pending:</span>
+                                    <strong style={{ color: 'var(--color-warning)' }}>{vendors.filter(v => v.status === 'pending').length}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Completion:</span>
+                                    <strong>{vendors.length > 0 ? (((vendorStats.confirmedVendors + vendorStats.bookedVendors) / vendors.length) * 100).toFixed(0) : 0}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4 style={{ fontSize: '14px', marginBottom: '12px' }}>Top 5 Vendor Categories by Cost</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
+                        {vendorStats.topTypes.map(([type, info]) => (
+                            <div key={type} style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <strong style={{ textTransform: 'capitalize', fontSize: '13px' }}>{type.replace(/_/g, ' ')}</strong>
+                                    <span className="badge badge-info">{info.count}</span>
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                                    Cost: <strong>{formatCurrency(info.cost)}</strong><br/>
+                                    Confirmed: {info.confirmed}/{info.count}
+                                </div>
+                                <div className="progress-bar" style={{ height: '6px', marginTop: '8px' }}>
+                                    <div className="progress-fill" style={{ width: `${(info.confirmed / info.count) * 100}%` }}></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            )}
 
             <Card>
                 {filteredVendors.length > 0 ? (

@@ -7,6 +7,7 @@ const { useState, useEffect, useMemo } = React;
             const [showModal, setShowModal] = useState(false);
             const [editingItem, setEditingItem] = useState(null);
             const [editingEvent, setEditingEvent] = useState(null);
+            const [showAnalytics, setShowAnalytics] = useState(false);
 
             const handleAddItem = (category, event) => {
                 setEditingItem(null);
@@ -64,8 +65,13 @@ const { useState, useEffect, useMemo } = React;
             return (
                 <div>
                     <div className="card">
-                        <h2 className="card-title">Shopping List</h2>
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                        <div className="flex-between">
+                            <h2 className="card-title">Shopping List</h2>
+                            <button className="btn btn-outline btn-small" onClick={() => setShowAnalytics(!showAnalytics)}>
+                                {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
+                            </button>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', marginTop: '16px' }}>
                             <button 
                                 className={`btn ${activeCategory === 'bride' ? 'btn-primary' : 'btn-outline'}`}
                                 onClick={() => setActiveCategory('bride')}
@@ -110,6 +116,8 @@ const { useState, useEffect, useMemo } = React;
                             </div>
                         </div>
                     </div>
+
+                    {showAnalytics && <ShoppingAnalytics shopping={shopping} />}
 
                     {shopping[activeCategory].map(event => (
                         <div key={event.event} className="card">

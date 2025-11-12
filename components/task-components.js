@@ -6,6 +6,7 @@ const { useState, useEffect, useMemo } = React;
 const Tasks = ({ tasks, updateData }) => {
     const { showModal, editing: editingTask, handleAdd, handleEdit, handleSave, handleDelete, closeModal } = useCRUD(tasks, updateData, 'tasks', t => !t.description?.trim() ? { description: 'Required' } : null);
     const [filteredTasks, filter, setFilter] = useFilter(tasks, (t, f) => t.status === f || t.priority === f);
+    const [showAnalytics, setShowAnalytics] = useState(false);
 
     const handleToggleStatus = (id) => {
         const updatedTasks = tasks.map(t => 
@@ -38,6 +39,9 @@ const Tasks = ({ tasks, updateData }) => {
         <div>
             <Card title={`Tasks Checklist (${stats.done}/${stats.total} completed)`} action={
                 <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn btn-outline btn-small" onClick={() => setShowAnalytics(!showAnalytics)}>
+                        {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
+                    </button>
                     <button className="btn btn-primary" onClick={() => handleAdd({
                         description: '', deadline: '', assignedTo: '', status: 'pending', priority: 'medium', category: 'general'
                     })}>Add Task</button>
@@ -89,6 +93,8 @@ const Tasks = ({ tasks, updateData }) => {
                     )}
                 </div>
             </Card>
+
+            {showAnalytics && <TaskAnalytics tasks={tasks} />}
 
             <Card>
                 {filteredTasks.length > 0 ? (

@@ -8,6 +8,40 @@ const Menus = ({ menus, updateData, budget }) => {
     const [editingEvent, setEditingEvent] = useState(null);
     const [editingItem, setEditingItem] = useState(null);
     const [currentEventId, setCurrentEventId] = useState(null);
+    const [showAnalytics, setShowAnalytics] = useState(false);
+
+    const menuStats = useMemo(() => {
+        const totalEvents = menus.length;
+        const totalExpected = menus.reduce((sum, m) => sum + (m.expectedGuests || 0), 0);
+        const totalAttended = menus.reduce((sum, m) => sum + (m.attendedGuests || 0), 0);
+        const totalExpectedCost = menus.reduce((sum, m) => {
+            return sum + (m.items?.reduce((s, i) => s + ((i.pricePerPlate || 0) * (m.expectedGuests || 0)), 0) || 0);
+        }, 0);
+        const totalActualCost = menus.reduce((sum, m) => {
+            return sum + (m.items?.reduce((s, i) => s + ((i.pricePerPlate || 0) * (m.attendedGuests || 0)), 0) || 0);
+        }, 0);
+        const totalItems = menus.reduce((sum, m) => sum + (m.items?.length || 0), 0);
+        const avgCostPerGuest = totalAttended > 0 ? totalActualCost / totalAttended : 0;
+        const costVariance = totalExpectedCost > 0 ? ((totalActualCost - totalExpectedCost) / totalExpectedCost * 100) : 0;
+        
+        const byPayment = { bride: 0, groom: 0, split: 0, pending: 0 };
+        menus.forEach(m => {
+            m.items?.forEach(item => {
+                const cost = (item.pricePerPlate || 0) * (m.attendedGuests || m.expectedGuests || 0);
+                if (item.paymentResponsibility === 'bride') byPayment.bride += cost;
+                else if (item.paymentResponsibility === 'groom') byPayment.groom += cost;
+                else if (item.paymentResponsibility === 'split') byPayment.split += cost;
+                else byPayment.pending += cost;
+            });
+        });
+        
+        const mostExpensiveEvent = menus.length > 0 ? menus.reduce((max, m) => {
+            const cost = m.items?.reduce((s, i) => s + ((i.pricePerPlate || 0) * (m.attendedGuests || m.expectedGuests || 0)), 0) || 0;
+            return cost > (max.cost || 0) ? { name: m.name, cost } : max;
+        }, {}) : null;
+        
+        return { totalEvents, totalExpected, totalAttended, totalExpectedCost, totalActualCost, totalItems, avgCostPerGuest, costVariance, byPayment, mostExpensiveEvent };
+    }, [menus]);
 
     const handleAddEvent = () => {
         setEditingEvent({ id: generateId(), name: '', expectedGuests: 0, attendedGuests: 0, items: [], budgetCategory: '' });
@@ -97,6 +131,9 @@ const Menus = ({ menus, updateData, budget }) => {
                 <div className="flex-between">
                     <h2 className="card-title">🍽️ Event Menus</h2>
                     <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="btn btn-outline btn-small" onClick={() => setShowAnalytics(!showAnalytics)}>
+                            {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
+                        </button>
                         <button className="btn btn-outline btn-small" onClick={() => {
                             const weddingEvents = [
                                 { id: generateId(), name: 'Mehendi Function', expectedGuests: 0, attendedGuests: 0, items: [], budgetCategory: 'catering' },
@@ -113,6 +150,98 @@ const Menus = ({ menus, updateData, budget }) => {
                     </div>
                 </div>
             </div>
+
+            {showAnalytics && (
+                <div className="card">
+                    <h3>📊 Menu Analytics</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '16px', marginBottom: '16px' }}>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{menuStats.totalEvents}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Events</div>
+                        </div>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{menuStats.totalItems}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Menu Items</div>
+                        </div>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{menuStats.totalExpected}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Expected Guests</div>
+                        </div>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{menuStats.totalAttended}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Attended Guests</div>
+                        </div>
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatCurrency(menuStats.avgCostPerGuest)}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Avg Cost/Guest</div>
+                        </div>
+                        <div style={{ padding: '12px', background: menuStats.costVariance > 10 ? 'rgba(220, 53, 69, 0.1)' : 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: menuStats.costVariance > 0 ? 'var(--color-error)' : 'var(--color-success)' }}>
+                                {menuStats.costVariance > 0 ? '+' : ''}{menuStats.costVariance.toFixed(1)}%
+                            </div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Cost Variance</div>
+                        </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                        <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>💰 Cost Breakdown</h4>
+                            <div style={{ fontSize: '13px', lineHeight: '1.8' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Expected Total:</span>
+                                    <strong>{formatCurrency(menuStats.totalExpectedCost)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Actual Total:</span>
+                                    <strong style={{ color: menuStats.totalActualCost > menuStats.totalExpectedCost ? 'var(--color-error)' : 'var(--color-success)' }}>
+                                        {formatCurrency(menuStats.totalActualCost)}
+                                    </strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Difference:</span>
+                                    <strong style={{ color: menuStats.totalActualCost > menuStats.totalExpectedCost ? 'var(--color-error)' : 'var(--color-success)' }}>
+                                        {formatCurrency(menuStats.totalActualCost - menuStats.totalExpectedCost)}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>👰🤵 Payment Split</h4>
+                            <div style={{ fontSize: '13px', lineHeight: '1.8' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>👰 Bride:</span>
+                                    <strong>{formatCurrency(menuStats.byPayment.bride)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>🤵 Groom:</span>
+                                    <strong>{formatCurrency(menuStats.byPayment.groom)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>🤝 Split:</span>
+                                    <strong>{formatCurrency(menuStats.byPayment.split)}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>⏳ Pending:</span>
+                                    <strong style={{ color: 'var(--color-warning)' }}>{formatCurrency(menuStats.byPayment.pending)}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {menuStats.mostExpensiveEvent && (
+                            <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>🌟 Most Expensive Event</h4>
+                                <div style={{ fontSize: '13px', lineHeight: '1.8' }}>
+                                    <div><strong>{menuStats.mostExpensiveEvent.name}</strong></div>
+                                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-primary)', marginTop: '8px' }}>
+                                        {formatCurrency(menuStats.mostExpensiveEvent.cost)}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {menus.length > 0 ? (
                 menus.map(event => {

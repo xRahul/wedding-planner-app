@@ -8,6 +8,7 @@ const Rituals = ({ ritualsAndCustoms, traditions, updateData }) => {
     const [activeTab, setActiveTab] = useState('pre');
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [showAnalytics, setShowAnalytics] = useState(false);
 
     const handleAdd = (type) => {
         setEditingItem({ type, name: '', description: '', date: '', time: '', participants: '', items: '', notes: '', completed: false });
@@ -78,8 +79,13 @@ const Rituals = ({ ritualsAndCustoms, traditions, updateData }) => {
     return (
         <div>
             <div className="card">
-                <h2 className="card-title">🪔 Rituals & Customs</h2>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="flex-between">
+                    <h2 className="card-title">🪔 Rituals & Customs</h2>
+                    <button className="btn btn-outline btn-small" onClick={() => setShowAnalytics(!showAnalytics)}>
+                        {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
+                    </button>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}>
                     <button className={`btn ${activeTab === 'pre' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('pre')}>Pre-Wedding</button>
                     <button className={`btn ${activeTab === 'main' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('main')}>Main Ceremonies</button>
                     <button className={`btn ${activeTab === 'customs' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('customs')}>Customs</button>
@@ -87,6 +93,8 @@ const Rituals = ({ ritualsAndCustoms, traditions, updateData }) => {
                     <button className={`btn ${activeTab === 'templates' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('templates')}>Templates</button>
                 </div>
             </div>
+
+            {showAnalytics && <RitualAnalytics ritualsAndCustoms={ritualsAndCustoms} />}
 
             {activeTab === 'pre' && (
                 <div className="card">

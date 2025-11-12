@@ -41,6 +41,7 @@ This is a full-featured wedding planning application built with React 18 (via CD
 - **Payment Responsibility**: Track who should pay (bride/groom/split) for each expense
 - **Paid By Tracking**: Track who actually paid (bride/groom/split/pending)
 - **Expandable Categories**: Click to expand and view all linked items with individual costs
+- **Budget Insights**: Breakdown showing manual actual vs linked actual costs with item counts
 - **Progress Visualization**: Visual progress bars and percentage tracking
 - **Real-time Calculations**: Automatic totals and remaining budget by side
 
@@ -77,15 +78,18 @@ This is a full-featured wedding planning application built with React 18 (via CD
 - **Family Gifts**: Track gifts for family members by ceremony
 - **Return Gifts**: Plan return gifts for guests
 - **Special Gifts**: Track special gifts for VIPs
-- **Cost Tracking**: Budget and actual costs
+- **Analytics Tab**: Traditional North Indian guidelines (Shagun amounts, gold coins, dry fruits) and budget summary
+- **Cost Tracking**: Auto-calculated totalCost = quantity × pricePerGift
 - **Payment Responsibility**: Track who should pay (bride/groom/split)
 - **Paid By Tracking**: Track who actually paid (bride/groom/split/pending)
 - **Budget Category Linking**: Link gifts to budget categories for auto-calculation
 - **Quantity Management**: Track quantities needed
-- **Status**: Purchased/Pending
+- **Status**: Pending/Ordered/Purchased/Delivered
+- **Common Gifts**: Pre-populated suggestions by category (family/return/special)
+- **Custom Events**: Add custom events beyond default North Indian ceremonies
 
 ### 🛍️ Shopping Lists
-- **Bride Shopping**: Organize by event (Wedding, Mehendi, Sangeet, etc.)
+- **Bride Shopping**: Organize by event (Wedding, Mehendi, Sangeet, Reception)
 - **Groom Shopping**: Separate shopping list for groom
 - **Family Shopping**: Track items needed for family members
 - **Item Status**: Pending/Ordered/Received/Completed
@@ -93,17 +97,23 @@ This is a full-featured wedding planning application built with React 18 (via CD
 - **Paid By Tracking**: Track who actually paid (bride/groom/split/pending)
 - **Budget Category Linking**: Link shopping items to budget categories for auto-calculation
 - **Cost Tracking**: Track budget per item
-- **Shopping Templates**: Pre-built shopping lists for bride, groom, and family
+- **Shopping Templates**: Pre-built shopping lists by event:
+  - Bride: Mehendi (Lehenga, Jewelry), Sangeet (Outfit, Dancing Shoes), Wedding (Bridal Lehenga, Jewelry Set), Reception (Gown/Saree, Jewelry)
+  - Groom: Sangeet (Kurta, Mojaris), Wedding (Sherwani, Sehra, Kalgi), Reception (Suit)
+  - Family: General (Coordination Outfits, Gift Wrapping Supplies)
 
 ### 🚌 Travel & Transport
-- **Vehicle Management**: Track buses, cars, tempo travelers, etc.
+- **Vehicle Management**: Track buses, cars, vans, tempo travelers, luxury coaches, SUVs, sedans
 - **Date Ranges**: From/to dates for each vehicle
 - **Capacity**: Track seats available
 - **Cost**: Per vehicle and total costs
 - **Payment Responsibility**: Track who should pay (bride/groom/split)
 - **Paid By Tracking**: Track who actually paid (bride/groom/split/pending)
 - **Budget Category Linking**: Link transport to budget categories for auto-calculation
-- **Route Information**: Track pickup/drop locations
+- **Route Information**: Track pickup/drop locations with kilometers
+- **Driver Details**: Track driver name and contact for each vehicle
+- **Stats Dashboard**: Total cost, distance, vehicles, seats, cost per km, cost per seat
+- **Travel Templates**: Common transport options (AC Bus for Baraat, Luxury Coach, Tempo Traveller) with one-click addition
 - **Guest Matching**: Compare transport capacity with guest needs
 
 ### 📅 Timeline
@@ -428,22 +438,21 @@ window.securityUtils.encryptGuestData(guest);
 - **Budget Integration**: 5 components with full budget category and payment tracking
 - **Auto-Calculation**: Budget automatically calculates from 5 linked data sources
 
-## 🔧 Recent Improvements (v2.4)
+## 🔧 Recent Improvements (v2.5)
 
-- **Payment Responsibility Tracking**: Track who should pay (bride/groom/split) for vendors, menus, gifts, shopping, and travel
-- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending) for all budget items
-- **Bride/Groom Budget Tracking**: Separate budget tracking for bride and groom sides with automatic calculation
-- **Budget Auto-Calculation**: Budget automatically calculates from linked items (vendors, menus, gifts, shopping, travel)
-- **Expandable Budget Categories**: Click to expand categories and view all linked items with individual costs
+- **Auto-Budget Calculation**: Total budget automatically calculated from bride + groom budgets (v2.5)
+- **Budget Insights**: Detailed breakdown showing manual vs linked actual costs (v2.5)
+- **Gift Analytics Tab**: Traditional guidelines and budget summary for gifts (v2.5)
+- **Shopping Templates**: Pre-built shopping lists for bride, groom, and family by event (v2.5)
+- **Travel Templates**: Common transport options with one-click addition (v2.5)
+- **Payment Responsibility Tracking**: Track who should pay (bride/groom/split) for vendors, menus, gifts, shopping, and travel (v2.4)
+- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending) for all budget items (v2.4)
+- **Bride/Groom Budget Tracking**: Separate budget tracking for bride and groom sides with automatic calculation (v2.4)
+- **Budget Auto-Calculation**: Budget automatically calculates from linked items (vendors, menus, gifts, shopping, travel) (v2.4)
+- **Expandable Budget Categories**: Click to expand categories and view all linked items with individual costs (v2.4)
 - **Menu Item Editing**: Full edit support for menu items with payment tracking (v2.3)
 - **Dietary Preferences**: Simplified to Veg and Jain options only (v2.2)
 - **Notification System**: Auto-dismissing notification banners for better UX (v2.2)
-- **Guest Table**: Improved fonts, sizing, and column ordering (v2.2)
-- **Accessibility**: Fixed skip link positioning for better keyboard navigation (v2.2)
-- **Service Worker**: Fixed cache URLs for proper offline functionality (v2.1)
-- **Validation**: Enhanced all validators with comprehensive checks and error handling (v2.1)
-- **Error Prevention**: Added division-by-zero guards in dashboard calculations (v2.1)
-- **Data Integrity**: Improved async storage operations and error handling (v2.1)
 
 ## 🛠️ Development
 
