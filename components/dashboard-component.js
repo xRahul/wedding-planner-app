@@ -1,6 +1,29 @@
 const { useMemo } = React;
 
 const Dashboard = ({ data }) => {
+    // Show analytics dashboard
+    return (
+        <div>
+            <SummaryStats data={data} />
+            <SmartRecommendations data={data} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                <TaskCompletionAnalytics data={data} />
+                <GuestAnalytics data={data} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                <BudgetHealthScorecard data={data} />
+                <VendorPerformanceSummary data={data} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                <TimelinePressureIndex data={data} />
+                <WeeklyProgressReport data={data} />
+            </div>
+            <EventReadinessTracker data={data} />
+        </div>
+    );
+};
+
+const DashboardOld = ({ data }) => {
     const stats = useMemo(() => {
         const totalGuests = data.guests.length;
         const totalIndividuals = data.guests.reduce((sum, g) => {
@@ -402,3 +425,5 @@ const Dashboard = ({ data }) => {
         </div>
     );
 };
+
+// Keep old dashboard for reference if needed
