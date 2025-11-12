@@ -15,33 +15,150 @@ const { useState, useEffect, useMemo } = React;
             };
 
             const stats = useMemo(() => {
+                const totalIndividuals = guests.reduce((sum, g) => {
+                    if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
+                    return sum + 1;
+                }, 0);
+                const confirmed = guests.filter(g => g.rsvpStatus === 'yes').length;
+                const confirmedIndividuals = guests.reduce((sum, g) => {
+                    if (g.rsvpStatus === 'yes') {
+                        if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
+                        return sum + 1;
+                    }
+                    return sum;
+                }, 0);
+                const pending = guests.filter(g => g.rsvpStatus === 'pending').length;
+                const declined = guests.filter(g => g.rsvpStatus === 'no').length;
+                const brideGuests = guests.filter(g => g.side === 'bride').length;
+                const groomGuests = guests.filter(g => g.side === 'groom').length;
+                const aadharCollected = guests.reduce((sum, g) => {
+                    let count = g.aadharCollected ? 1 : 0;
+                    if (g.type === 'family' && g.familyMembers) {
+                        count += g.familyMembers.filter(m => m.aadharCollected).length;
+                    }
+                    return sum + count;
+                }, 0);
+                const roomsAssigned = guests.reduce((sum, g) => {
+                    let count = g.room ? 1 : 0;
+                    if (g.type === 'family' && g.familyMembers) {
+                        count += g.familyMembers.filter(m => m.room).length;
+                    }
+                    return sum + count;
+                }, 0);
+                const vegCount = guests.reduce((sum, g) => {
+                    let count = g.dietary === 'veg' ? 1 : 0;
+                    if (g.type === 'family' && g.familyMembers) {
+                        count += g.familyMembers.filter(m => m.dietary === 'veg').length;
+                    }
+                    return sum + count;
+                }, 0);
+                const nonVegCount = guests.reduce((sum, g) => {
+                    let count = g.dietary === 'non_veg' ? 1 : 0;
+                    if (g.type === 'family' && g.familyMembers) {
+                        count += g.familyMembers.filter(m => m.dietary === 'non_veg').length;
+                    }
+                    return sum + count;
+                }, 0);
+                const categories = {};
+                guests.forEach(g => {
+                    categories[g.category] = (categories[g.category] || 0) + 1;
+                });
                 return {
                     total: guests.length,
-                    confirmed: guests.filter(g => g.rsvpStatus === 'yes').length,
-                    pending: guests.filter(g => g.rsvpStatus === 'pending').length,
-                    declined: guests.filter(g => g.rsvpStatus === 'no').length
+                    totalIndividuals,
+                    confirmed,
+                    confirmedIndividuals,
+                    pending,
+                    declined,
+                    brideGuests,
+                    groomGuests,
+                    aadharCollected,
+                    roomsAssigned,
+                    vegCount,
+                    nonVegCount,
+                    categories
                 };
             }, [guests]);
 
             return (
                 <div>
-                    <Card title={`Guest List (${stats.total} total)`} action={
+                    <Card title="Guest Dashboard" action={
                         <button className="btn btn-primary" onClick={() => handleAdd({
                             type: 'single', name: '', category: 'family', side: 'groom', relation: '',
                             phone: '', dietary: 'veg', rsvpStatus: 'pending', aadharCollected: false,
                             room: '', arrivalDate: '', departureDate: '', notes: '', familyMembers: []
                         })}>Add Guest</button>
                     }>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-value">{stats.totalIndividuals}</div>
+                                <div className="stat-label">Total Individuals</div>
+                                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                                    {stats.total} entries
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-value" style={{ color: 'var(--color-success)' }}>{stats.confirmedIndividuals}</div>
+                                <div className="stat-label">Confirmed Attending</div>
+                                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                                    {stats.confirmed} entries confirmed
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-value" style={{ color: 'var(--color-warning)' }}>{stats.pending}</div>
+                                <div className="stat-label">Pending RSVP</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-value" style={{ color: 'var(--color-error)' }}>{stats.declined}</div>
+                                <div className="stat-label">Declined</div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '16px' }}>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Side Split</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>👰 {stats.brideGuests} | 🤵 {stats.groomGuests}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Aadhar Collected</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.aadharCollected} / {stats.totalIndividuals}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                                    {((stats.aadharCollected / stats.totalIndividuals) * 100).toFixed(0)}% complete
+                                </div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Rooms Assigned</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.roomsAssigned} / {stats.totalIndividuals}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                                    {((stats.roomsAssigned / stats.totalIndividuals) * 100).toFixed(0)}% assigned
+                                </div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Dietary Preferences</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>🥗 {stats.vegCount} | 🍗 {stats.nonVegCount}</div>
+                            </div>
+                        </div>
+                        {Object.keys(stats.categories).length > 0 && (
+                            <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>Categories</div>
+                                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                    {Object.entries(stats.categories).sort((a, b) => b[1] - a[1]).map(([cat, count]) => (
+                                        <div key={cat} style={{ fontSize: '14px' }}>
+                                            <span style={{ textTransform: 'capitalize', fontWeight: '600' }}>{cat.replace('_', ' ')}</span>: {count}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </Card>
+
+                    <Card title={`Guest List (${stats.total} entries, ${stats.totalIndividuals} individuals)`}>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
                             {['all', 'family', 'friends', 'yes', 'pending'].map(f => (
                                 <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f)}>
                                     {f === 'all' ? 'All' : f === 'yes' ? `Confirmed (${stats.confirmed})` : f === 'pending' ? `Pending (${stats.pending})` : f.charAt(0).toUpperCase() + f.slice(1)}
                                 </button>
                             ))}
                         </div>
-                    </Card>
-
-                    <Card>
                         {filteredGuests.length > 0 ? (
                             <div className="table-container">
                                 <table className="table">
