@@ -277,7 +277,7 @@ const Timeline = ({ timeline, updateData, weddingDate }) => {
                             {getDayLabel(day.dayOffset)} - {formatDate(day.date)}
                         </div>
                         {day.events && day.events.length > 0 ? (
-                            day.events.map((event, idx) => (
+                            [...day.events].sort((a, b) => (a.fromTime || '').localeCompare(b.fromTime || '')).map((event, idx) => (
                                 <div key={idx} className="timeline-event">
                                     <div className="flex-between">
                                         <div>
