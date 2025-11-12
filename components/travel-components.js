@@ -1,7 +1,7 @@
 const { useState, useEffect, useMemo } = React;
 // ==================== TRAVEL COMPONENT ====================
 
-        const Travel = ({ travel, updateData }) => {
+        const Travel = ({ travel, updateData, budget }) => {
             const [showModal, setShowModal] = useState(false);
             const [editingItem, setEditingItem] = useState(null);
 
@@ -18,7 +18,8 @@ const { useState, useEffect, useMemo } = React;
                     route: '',
                     driverName: '',
                     driverContact: '',
-                    notes: ''
+                    notes: '',
+                    budgetCategory: ''
                 });
                 setShowModal(true);
             };
@@ -127,6 +128,7 @@ const { useState, useEffect, useMemo } = React;
                                             <th>To Date</th>
                                             <th>Seats</th>
                                             <th>Total Price</th>
+                                            <th>Budget Category</th>
                                             <th>Kilometers</th>
                                             <th>Route</th>
                                             <th>Driver</th>
@@ -148,6 +150,11 @@ const { useState, useEffect, useMemo } = React;
                                                 <td>{formatDate(trans.toDate)}</td>
                                                 <td style={{ textAlign: 'center' }}>{trans.seats}</td>
                                                 <td style={{ fontWeight: 'bold', color: 'var(--color-success)' }}>{formatCurrency(trans.totalPrice || 0)}</td>
+                                                <td>
+                                                    {trans.budgetCategory ? (
+                                                        <span className="badge badge-info">{trans.budgetCategory.replace(/_/g, ' ')}</span>
+                                                    ) : '-'}
+                                                </td>
                                                 <td style={{ textAlign: 'center' }}>{trans.kilometers || 0} km</td>
                                                 <td style={{ fontSize: '12px', maxWidth: '150px' }}>{trans.route || '-'}</td>
                                                 <td>{trans.driverName || '-'}</td>
@@ -188,14 +195,20 @@ const { useState, useEffect, useMemo } = React;
                             item={editingItem}
                             onSave={handleSave}
                             onClose={() => { setShowModal(false); setEditingItem(null); }}
+                            budget={budget}
                         />
                     )}
                 </div>
             );
         };
 
-        const TravelModal = ({ item, onSave, onClose }) => {
+        const TravelModal = ({ item, onSave, onClose, budget }) => {
             const [formData, setFormData] = useState(item);
+            
+            const budgetCategories = budget?.map(b => ({
+                value: b.category,
+                label: b.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+            })) || [];
 
             return (
                 <div className="modal-overlay" onClick={onClose}>
@@ -273,6 +286,15 @@ const { useState, useEffect, useMemo } = React;
                                     placeholder="Total cost for the booking"
                                     min="0"
                                 />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Budget Category</label>
+                                <select className="form-select" value={formData.budgetCategory || ''} onChange={e => setFormData({ ...formData, budgetCategory: e.target.value })}>
+                                    <option value="">Select category (optional)</option>
+                                    {budgetCategories.map(cat => (
+                                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Total Kilometers</label>

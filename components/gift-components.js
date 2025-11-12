@@ -2,7 +2,7 @@ const { useState, useEffect, useMemo } = React;
 
 // ==================== GIFTS COMPONENT ====================
 
-const Gifts = ({ giftsAndFavors, updateData }) => {
+const Gifts = ({ giftsAndFavors, updateData, budget }) => {
     const [activeTab, setActiveTab] = useState('family');
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -19,7 +19,8 @@ const Gifts = ({ giftsAndFavors, updateData }) => {
             totalCost: 0,
             status: 'pending', 
             purchasedFrom: '',
-            notes: '' 
+            notes: '',
+            budgetCategory: '' 
         });
         setShowModal(true);
     };
@@ -143,6 +144,7 @@ const Gifts = ({ giftsAndFavors, updateData }) => {
                                         <th>Quantity</th>
                                         <th>Price/Gift</th>
                                         <th>Total Cost</th>
+                                        <th>Budget Category</th>
                                         <th>Status</th>
                                         <th>Purchased From</th>
                                         <th>Notes</th>
@@ -158,6 +160,11 @@ const Gifts = ({ giftsAndFavors, updateData }) => {
                                             <td style={{ textAlign: 'center' }}>{gift.quantity}</td>
                                             <td>{formatCurrency(gift.pricePerGift || 0)}</td>
                                             <td><strong>{formatCurrency(gift.totalCost || 0)}</strong></td>
+                                            <td>
+                                                {gift.budgetCategory ? (
+                                                    <span className="badge badge-info">{gift.budgetCategory.replace(/_/g, ' ')}</span>
+                                                ) : '-'}
+                                            </td>
                                             <td>
                                                 <span className={`badge ${gift.status === 'purchased' ? 'badge-success' : gift.status === 'ordered' ? 'badge-info' : 'badge-warning'}`}>
                                                     {gift.status}
@@ -372,13 +379,18 @@ const Gifts = ({ giftsAndFavors, updateData }) => {
                 </div>
             )}
 
-            {showModal && <GiftModal item={editingItem} onSave={handleSave} onClose={() => { setShowModal(false); setEditingItem(null); }} />}
+            {showModal && <GiftModal item={editingItem} onSave={handleSave} onClose={() => { setShowModal(false); setEditingItem(null); }} budget={budget} />}
         </div>
     );
 };
 
-const GiftModal = ({ item, onSave, onClose }) => {
+const GiftModal = ({ item, onSave, onClose, budget }) => {
     const [formData, setFormData] = useState(item);
+    
+    const budgetCategories = budget?.map(b => ({
+        value: b.category,
+        label: b.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    })) || [];
     const defaultEvents = [
         'Roka', 'Sagan', 'Tilak', 'Ring Ceremony',
         'Mehendi', 'Sangeet', 'Haldi', 
@@ -509,6 +521,15 @@ const GiftModal = ({ item, onSave, onClose }) => {
                             readOnly
                             style={{ background: 'var(--color-bg-secondary)', fontWeight: 'bold' }}
                         />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Budget Category</label>
+                        <select className="form-select" value={formData.budgetCategory || ''} onChange={e => setFormData({ ...formData, budgetCategory: e.target.value })}>
+                            <option value="">Select category (optional)</option>
+                            {budgetCategories.map(cat => (
+                                <option key={cat.value} value={cat.value}>{cat.label}</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="form-group">
                         <label className="form-label">Status</label>

@@ -2,7 +2,7 @@ const { useState, useEffect, useMemo } = React;
 
 // ==================== VENDORS COMPONENT ====================
 
-const Vendors = ({ vendors, updateData }) => {
+const Vendors = ({ vendors, updateData, budget }) => {
     const { showModal, editing: editingVendor, handleAdd, handleEdit, handleSave, handleDelete, closeModal } = useCRUD(vendors, updateData, 'vendors', validateVendor);
     const [filteredVendors, filter, setFilter] = useFilter(vendors, (v, f) => v.type === f || v.status === f);
 
@@ -24,7 +24,7 @@ const Vendors = ({ vendors, updateData }) => {
                 <button className="btn btn-primary" onClick={() => handleAdd({
                     type: 'decorator', name: '', contact: '', email: '', estimatedCost: 0,
                     finalCost: 0, status: 'pending', availability: [], bookedDate: '', notes: '',
-                    advancePaid: 0, paymentStatus: 'pending', rating: 0, reviews: ''
+                    advancePaid: 0, paymentStatus: 'pending', rating: 0, reviews: '', budgetCategory: ''
                 })}>Add Vendor</button>
             }>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '16px' }}>
@@ -52,7 +52,7 @@ const Vendors = ({ vendors, updateData }) => {
                     )}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-                    {['all', 'confirmed', 'booked', 'pending'].map(f => (
+                    {['all', 'confirmed', 'booked', 'pending', 'cancelled'].map(f => (
                         <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f)}>
                             {f.charAt(0).toUpperCase() + f.slice(1)}
                         </button>
@@ -68,6 +68,7 @@ const Vendors = ({ vendors, updateData }) => {
                                 <tr>
                                     <th>Type</th>
                                     <th>Name</th>
+                                    <th>Budget Category</th>
                                     <th>Contact</th>
                                     <th>Email</th>
                                     <th>Estimated Cost</th>
@@ -84,6 +85,7 @@ const Vendors = ({ vendors, updateData }) => {
                                     <tr key={vendor.id}>
                                         <td><span className="badge badge-info" style={{ textTransform: 'capitalize' }}>{vendor.type.replace('_', ' ')}</span></td>
                                         <td><strong>{vendor.name}</strong></td>
+                                        <td style={{ textTransform: 'capitalize' }}>{vendor.budgetCategory ? vendor.budgetCategory.replace('_', ' ') : '-'}</td>
                                         <td>{vendor.contact || '-'}</td>
                                         <td style={{ fontSize: '11px' }}>{vendor.email || '-'}</td>
                                         <td>{formatCurrency(vendor.estimatedCost || vendor.cost || 0)}</td>
@@ -118,12 +120,12 @@ const Vendors = ({ vendors, updateData }) => {
                 ) : <EmptyState icon="🤝" message="No vendors found" />}
             </Card>
 
-            {showModal && <VendorModal vendor={editingVendor} onSave={handleSave} onClose={closeModal} />}
+            {showModal && <VendorModal vendor={editingVendor} onSave={handleSave} onClose={closeModal} budget={budget} />}
         </div>
     );
 };
 
-const VendorModal = ({ vendor, onSave, onClose }) => {
+const VendorModal = ({ vendor, onSave, onClose, budget }) => {
     const [formData, setFormData] = useState(vendor);
     const defaultVendorTypes = [
         'pandit_ji', 'decorator', 'caterer', 'dj', 
@@ -186,6 +188,21 @@ const VendorModal = ({ vendor, onSave, onClose }) => {
                         options={vendorTypes}
                         placeholder="Enter custom vendor type"
                     />
+                    <div className="form-group">
+                        <label className="form-label">Budget Category</label>
+                        <select 
+                            className="form-select"
+                            value={formData.budgetCategory || ''}
+                            onChange={e => setFormData({ ...formData, budgetCategory: e.target.value })}
+                        >
+                            <option value="">-- Select Budget Category --</option>
+                            {budget && budget.map(cat => (
+                                <option key={cat.category} value={cat.category}>
+                                    {cat.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                     <div className="form-group">
                         <label className="form-label">Name *</label>
                         <input 
@@ -332,6 +349,7 @@ const VendorModal = ({ vendor, onSave, onClose }) => {
                             <option value="pending">Pending</option>
                             <option value="booked">Booked</option>
                             <option value="confirmed">Confirmed</option>
+                            <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
                     <div className="form-group">

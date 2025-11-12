@@ -84,14 +84,14 @@ const WeddingPlannerApp = () => {
                 {activeTab === 'dashboard' && <Dashboard data={data} />}
                 {activeTab === 'timeline' && <Timeline timeline={data.timeline} updateData={updateData} weddingDate={data.weddingInfo.weddingDate} />}
                 {activeTab === 'guests' && <Guests guests={data.guests} updateData={updateData} data={data} />}
-                {activeTab === 'vendors' && <Vendors vendors={data.vendors} updateData={updateData} />}
+                {activeTab === 'vendors' && <Vendors vendors={data.vendors} updateData={updateData} budget={data.budget} />}
                 {activeTab === 'budget' && <Budget budget={data.budget} updateData={updateData} totalBudget={data.weddingInfo.totalBudget} />}
                 {activeTab === 'tasks' && <Tasks tasks={data.tasks} updateData={updateData} />}
-                {activeTab === 'menus' && <Menus menus={data.menus} updateData={updateData} />}
-                {activeTab === 'shopping' && <Shopping shopping={data.shopping} updateData={updateData} />}
+                {activeTab === 'menus' && <Menus menus={data.menus} updateData={updateData} budget={data.budget} />}
+                {activeTab === 'shopping' && <Shopping shopping={data.shopping} updateData={updateData} budget={data.budget} />}
                 {activeTab === 'rituals' && <Rituals ritualsAndCustoms={data.ritualsAndCustoms} traditions={data.traditions} updateData={updateData} />}
-                {activeTab === 'gifts' && <Gifts giftsAndFavors={data.giftsAndFavors} updateData={updateData} />}
-                {activeTab === 'travel' && <Travel travel={data.travel} updateData={updateData} />}
+                {activeTab === 'gifts' && <Gifts giftsAndFavors={data.giftsAndFavors} updateData={updateData} budget={data.budget} />}
+                {activeTab === 'travel' && <Travel travel={data.travel} updateData={updateData} budget={data.budget} />}
                 {activeTab === 'settings' && <Settings weddingInfo={data.weddingInfo} updateData={updateData} allData={data} setData={setData} showNotification={showNotification} />}
             </main>
         </div>
