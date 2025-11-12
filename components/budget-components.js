@@ -2,10 +2,15 @@ const { useState, useEffect, useMemo } = React;
 
 // ==================== BUDGET COMPONENT ====================
 
-const Budget = ({ budget, updateData, totalBudget }) => {
+const Budget = ({ budget, updateData, totalBudget, allData }) => {
     const [editingCategory, setEditingCategory] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
+    const [expandedCategories, setExpandedCategories] = useState({});
+
+    const toggleCategory = (category) => {
+        setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
+    };
 
     const handleUpdate = (category, updates) => {
         const updatedBudget = budget.map(cat => 
@@ -55,12 +60,108 @@ const Budget = ({ budget, updateData, totalBudget }) => {
         }
     };
 
+    // Calculate linked items from all entities
+    const linkedItems = useMemo(() => {
+        const items = {};
+        
+        // Vendors: estimatedCost -> expected, finalCost -> actual
+        allData?.vendors?.forEach(v => {
+            if (v.budgetCategory) {
+                if (!items[v.budgetCategory]) items[v.budgetCategory] = [];
+                items[v.budgetCategory].push({
+                    type: 'Vendor',
+                    name: v.name,
+                    expected: v.estimatedCost || 0,
+                    actual: v.finalCost || 0
+                });
+            }
+        });
+        
+        // Menus: pricePerPlate * expectedGuests -> expected, pricePerPlate * attendedGuests -> actual
+        allData?.menus?.forEach(m => {
+            m.items?.forEach(item => {
+                const category = item.budgetCategory || m.budgetCategory;
+                if (category) {
+                    if (!items[category]) items[category] = [];
+                    const expected = (item.pricePerPlate || 0) * (m.expectedGuests || 0);
+                    const actual = (item.pricePerPlate || 0) * (m.attendedGuests || 0);
+                    items[category].push({
+                        type: 'Menu',
+                        name: `${m.name} - ${item.name}`,
+                        expected: expected,
+                        actual: actual
+                    });
+                }
+            });
+        });
+        
+        // Gifts: totalCost for both expected and actual
+        ['familyGifts', 'returnGifts', 'specialGifts'].forEach(giftType => {
+            allData?.giftsAndFavors?.[giftType]?.forEach(g => {
+                if (g.budgetCategory) {
+                    if (!items[g.budgetCategory]) items[g.budgetCategory] = [];
+                    const cost = g.totalCost || 0;
+                    items[g.budgetCategory].push({
+                        type: 'Gift',
+                        name: g.recipient || g.giftName || 'Gift',
+                        expected: cost,
+                        actual: cost
+                    });
+                }
+            });
+        });
+        
+        // Shopping: budget field for both expected and actual
+        ['bride', 'groom', 'family'].forEach(shopType => {
+            allData?.shopping?.[shopType]?.forEach(list => {
+                list.items?.forEach(item => {
+                    if (item.budgetCategory) {
+                        if (!items[item.budgetCategory]) items[item.budgetCategory] = [];
+                        items[item.budgetCategory].push({
+                            type: 'Shopping',
+                            name: `${shopType} - ${item.item}`,
+                            expected: item.budget || 0,
+                            actual: item.budget || 0
+                        });
+                    }
+                });
+            });
+        });
+        
+        // Travel: totalPrice -> expected and actual
+        allData?.travel?.transport?.forEach(t => {
+            if (t.budgetCategory) {
+                if (!items[t.budgetCategory]) items[t.budgetCategory] = [];
+                items[t.budgetCategory].push({
+                    type: 'Transport',
+                    name: t.vehicleType,
+                    expected: t.totalPrice || 0,
+                    actual: t.totalPrice || 0
+                });
+            }
+        });
+        
+        return items;
+    }, [allData]);
+
     const totals = useMemo(() => {
-        const totalPlanned = budget.reduce((sum, cat) => sum + cat.planned, 0);
-        const totalActual = budget.reduce((sum, cat) => sum + cat.actual, 0);
+        const totalPlanned = budget.reduce((sum, cat) => sum + (cat.planned || 0), 0);
+        const totalManualActual = budget.reduce((sum, cat) => sum + (cat.actual || 0), 0);
+        
+        // Calculate expected and actual from linked items
+        let totalExpected = 0;
+        let totalLinkedActual = 0;
+        Object.values(linkedItems).forEach(items => {
+            items.forEach(item => {
+                totalExpected += item.expected || 0;
+                totalLinkedActual += item.actual || 0;
+            });
+        });
+        
+        const totalActual = totalManualActual + totalLinkedActual;
         const remaining = totalBudget - totalActual;
-        return { totalPlanned, totalActual, remaining };
-    }, [budget, totalBudget]);
+        return { totalPlanned, totalManualActual, totalExpected, totalLinkedActual, totalActual, remaining };
+    }, [budget, totalBudget, linkedItems]);
 
     return (
         <div>
@@ -78,8 +179,16 @@ const Budget = ({ budget, updateData, totalBudget }) => {
                         <div className="stat-label">Total Budget</div>
                     </div>
                     <div className="stat-card">
+                        <div className="stat-value">{formatCurrency(totals.totalPlanned)}</div>
+                        <div className="stat-label">Planned</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-value">{formatCurrency(totals.totalExpected)}</div>
+                        <div className="stat-label">Expected</div>
+                    </div>
+                    <div className="stat-card">
                         <div className="stat-value">{formatCurrency(totals.totalActual)}</div>
-                        <div className="stat-label">Spent</div>
+                        <div className="stat-label">Total Spent</div>
                     </div>
                     <div className="stat-card" style={{ background: totals.remaining < 0 ? 'rgba(220, 53, 69, 0.1)' : 'var(--color-bg-secondary)' }}>
                         <div className="stat-value" style={{ color: totals.remaining >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}>
@@ -92,7 +201,7 @@ const Budget = ({ budget, updateData, totalBudget }) => {
                     </div>
                     <div className="stat-card" style={{ background: ((totals.totalActual / totalBudget) * 100) > 90 ? 'rgba(255, 193, 7, 0.1)' : 'var(--color-bg-secondary)' }}>
                         <div className="stat-value" style={{ color: ((totals.totalActual / totalBudget) * 100) > 90 ? 'var(--color-warning)' : 'inherit' }}>
-                            {((totals.totalActual / totalBudget) * 100).toFixed(1)}%
+                            {totalBudget > 0 ? ((totals.totalActual / totalBudget) * 100).toFixed(1) : 0}%
                         </div>
                         <div className="stat-label">Budget Used</div>
                         {((totals.totalActual / totalBudget) * 100) > 90 && (
@@ -103,12 +212,12 @@ const Budget = ({ budget, updateData, totalBudget }) => {
                 
                 {/* Budget Insights */}
                 <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Budget Insights</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Budget Breakdown</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', fontSize: '12px' }}>
-                        <div>Top Expense: {budget.length > 0 ? budget.reduce((max, cat) => cat.actual > max.actual ? cat : max, budget[0]).category.replace('_', ' ') : 'None'}</div>
+                        <div>Linked Items: {Object.values(linkedItems).reduce((sum, items) => sum + items.length, 0)} total</div>
                         <div>Categories: {budget.length} total</div>
-                        <div>Avg per category: {formatCurrency(budget.length > 0 ? totals.totalActual / budget.length : 0)}</div>
-                        <div>Budget utilization: {budget.filter(cat => cat.actual > 0).length}/{budget.length} categories used</div>
+                        <div>Manual Actual: {formatCurrency(totals.totalManualActual)}</div>
+                        <div>Linked Actual: {formatCurrency(totals.totalLinkedActual)}</div>
                     </div>
                 </div>
             </div>
@@ -119,10 +228,10 @@ const Budget = ({ budget, updateData, totalBudget }) => {
                     <table className="table">
                         <thead>
                             <tr>
-                                <th>Category</th>
+                                <th>Category / Item</th>
                                 <th>Planned</th>
+                                <th>Expected</th>
                                 <th>Actual</th>
-                                <th>Difference</th>
                                 <th>% of Budget</th>
                                 <th>Progress</th>
                                 <th>Actions</th>
@@ -130,45 +239,74 @@ const Budget = ({ budget, updateData, totalBudget }) => {
                         </thead>
                         <tbody>
                             {budget.map(cat => {
-                                const diff = cat.actual - cat.planned;
-                                const percentage = cat.planned > 0 ? (cat.actual / cat.planned * 100) : 0;
+                                const catLinkedItems = linkedItems[cat.category] || [];
+                                const linkedExpected = catLinkedItems.reduce((sum, item) => sum + (item.expected || 0), 0);
+                                const linkedActual = catLinkedItems.reduce((sum, item) => sum + (item.actual || 0), 0);
+                                const totalActual = (cat.actual || 0) + linkedActual;
+                                const totalExpected = linkedExpected;
+                                const percentage = cat.planned > 0 ? (totalActual / cat.planned * 100) : 0;
+                                const isExpanded = expandedCategories[cat.category];
+                                
                                 return (
-                                    <tr key={cat.category}>
-                                        <td style={{ textTransform: 'capitalize', fontWeight: 600 }}>{cat.category}</td>
-                                        <td>{formatCurrency(cat.planned)}</td>
-                                        <td>{formatCurrency(cat.actual)}</td>
-                                        <td style={{ color: diff > 0 ? 'var(--color-error)' : 'var(--color-success)' }}>
-                                            {diff > 0 ? '+' : ''}{formatCurrency(diff)}
-                                        </td>
-                                        <td>{((cat.actual / totalBudget) * 100).toFixed(1)}%</td>
-                                        <td style={{ minWidth: '150px' }}>
-                                            <div className="progress-bar" style={{ height: '20px' }}>
-                                                <div 
-                                                    className="progress-fill" 
-                                                    style={{ 
-                                                        width: `${Math.min(percentage, 100)}%`,
-                                                        background: percentage > 100 ? 'var(--color-error)' : 'linear-gradient(90deg, var(--color-primary), var(--color-accent))'
-                                                    }}
-                                                >
-                                                    {percentage > 10 && `${percentage.toFixed(0)}%`}
+                                    <React.Fragment key={cat.category}>
+                                        <tr style={{ background: 'var(--color-bg-secondary)', fontWeight: 600, cursor: catLinkedItems.length > 0 ? 'pointer' : 'default' }}
+                                            onClick={() => catLinkedItems.length > 0 && toggleCategory(cat.category)}>
+                                            <td style={{ textTransform: 'capitalize' }}>
+                                                {catLinkedItems.length > 0 && (
+                                                    <span style={{ marginRight: '8px', fontSize: '12px' }}>{isExpanded ? '▼' : '▶'}</span>
+                                                )}
+                                                {cat.category.replace(/_/g, ' ')}
+                                                {catLinkedItems.length > 0 && (
+                                                    <span style={{ fontSize: '11px', marginLeft: '8px', color: 'var(--color-text-secondary)' }}>({catLinkedItems.length} items)</span>
+                                                )}
+                                            </td>
+                                            <td>{formatCurrency(cat.planned || 0)}</td>
+                                            <td>{formatCurrency(totalExpected)}</td>
+                                            <td>{formatCurrency(totalActual)}</td>
+                                            <td>{totalBudget > 0 ? ((totalActual / totalBudget) * 100).toFixed(1) : 0}%</td>
+                                            <td style={{ minWidth: '150px' }}>
+                                                <div className="progress-bar" style={{ height: '20px' }}>
+                                                    <div 
+                                                        className="progress-fill" 
+                                                        style={{ 
+                                                            width: `${Math.min(percentage, 100)}%`,
+                                                            background: percentage > 100 ? 'var(--color-error)' : 'linear-gradient(90deg, var(--color-primary), var(--color-accent))'
+                                                        }}
+                                                    >
+                                                        {percentage > 10 && `${percentage.toFixed(0)}%`}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <button 
-                                                className="btn btn-outline btn-small"
-                                                onClick={() => setEditingCategory(cat.category)}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button 
-                                                className="btn btn-danger btn-small"
-                                                onClick={() => handleRemoveCategory(cat.category)}
-                                            >
-                                                Remove
-                                            </button>
-                                        </td>
-                                    </tr>
+                                            </td>
+                                            <td onClick={e => e.stopPropagation()}>
+                                                <button 
+                                                    className="btn btn-outline btn-small"
+                                                    onClick={() => setEditingCategory(cat.category)}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button 
+                                                    className="btn btn-danger btn-small"
+                                                    onClick={() => handleRemoveCategory(cat.category)}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {isExpanded && catLinkedItems.map((item, idx) => (
+                                            <tr key={`${cat.category}-${idx}`} style={{ fontSize: '12px', color: 'var(--color-text-secondary)', background: '#fafafa' }}>
+                                                <td style={{ paddingLeft: '40px' }}>
+                                                    <span className="badge badge-info" style={{ fontSize: '10px', marginRight: '6px' }}>{item.type}</span>
+                                                    {item.name}
+                                                </td>
+                                                <td>-</td>
+                                                <td>{formatCurrency(item.expected || 0)}</td>
+                                                <td>{formatCurrency(item.actual || 0)}</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                            </tr>
+                                        ))}
+                                    </React.Fragment>
                                 );
                             })}
                         </tbody>

@@ -85,7 +85,7 @@ const WeddingPlannerApp = () => {
                 {activeTab === 'timeline' && <Timeline timeline={data.timeline} updateData={updateData} weddingDate={data.weddingInfo.weddingDate} />}
                 {activeTab === 'guests' && <Guests guests={data.guests} updateData={updateData} data={data} />}
                 {activeTab === 'vendors' && <Vendors vendors={data.vendors} updateData={updateData} budget={data.budget} />}
-                {activeTab === 'budget' && <Budget budget={data.budget} updateData={updateData} totalBudget={data.weddingInfo.totalBudget} />}
+                {activeTab === 'budget' && <Budget budget={data.budget} updateData={updateData} totalBudget={data.weddingInfo.totalBudget} allData={data} />}
                 {activeTab === 'tasks' && <Tasks tasks={data.tasks} updateData={updateData} />}
                 {activeTab === 'menus' && <Menus menus={data.menus} updateData={updateData} budget={data.budget} />}
                 {activeTab === 'shopping' && <Shopping shopping={data.shopping} updateData={updateData} budget={data.budget} />}

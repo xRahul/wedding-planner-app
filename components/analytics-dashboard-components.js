@@ -211,47 +211,123 @@ const BudgetHealthScorecard = ({ data }) => {
         const budget = data.budget || [];
         const totalBudget = data.weddingInfo?.totalBudget || 0;
         const totalSpent = budget.reduce((sum, cat) => sum + (cat.actual || 0), 0);
-        const utilization = totalBudget > 0 ? (totalSpent / totalBudget * 100).toFixed(1) : 0;
+        
+        // Calculate linked items
+        let totalExpected = 0;
+        let totalLinkedActual = 0;
+        
+        // Vendors
+        data.vendors?.forEach(v => {
+            if (v.budgetCategory) {
+                totalExpected += v.estimatedCost || 0;
+                totalLinkedActual += v.finalCost || 0;
+            }
+        });
+        
+        // Menus
+        data.menus?.forEach(m => {
+            const eventTotal = m.items?.reduce((sum, item) => sum + (item.cost || 0), 0) || 0;
+            if (m.budgetCategory) {
+                totalExpected += eventTotal;
+                totalLinkedActual += eventTotal;
+            }
+            m.items?.forEach(item => {
+                if (item.budgetCategory && item.budgetCategory !== m.budgetCategory) {
+                    totalExpected += item.cost || 0;
+                    totalLinkedActual += item.cost || 0;
+                }
+            });
+        });
+        
+        // Gifts
+        ['familyGifts', 'returnGifts', 'specialGifts'].forEach(giftType => {
+            data.giftsAndFavors?.[giftType]?.forEach(g => {
+                if (g.budgetCategory) {
+                    const actual = giftType === 'returnGifts' ? (g.totalCost || 0) : (g.actualCost || g.cost || 0);
+                    totalLinkedActual += actual;
+                }
+            });
+        });
+        
+        // Shopping
+        ['bride', 'groom', 'family'].forEach(shopType => {
+            data.shopping?.[shopType]?.forEach(list => {
+                list.items?.forEach(item => {
+                    if (item.budgetCategory) {
+                        totalExpected += item.estimatedCost || 0;
+                        totalLinkedActual += item.actualCost || 0;
+                    }
+                });
+            });
+        });
+        
+        // Travel
+        data.travel?.transport?.forEach(t => {
+            if (t.budgetCategory) {
+                totalLinkedActual += t.totalPrice || 0;
+            }
+        });
+        
+        const totalActualSpent = totalSpent + totalLinkedActual;
+        const utilization = totalBudget > 0 ? (totalActualSpent / totalBudget * 100).toFixed(1) : 0;
         
         const categories = budget.map(cat => ({
             name: cat.category,
             planned: cat.planned || 0,
             actual: cat.actual || 0,
             percentage: cat.planned > 0 ? (cat.actual / cat.planned * 100).toFixed(1) : 0
-        })).filter(c => c.planned > 0);
+        })).filter(c => c.planned > 0).slice(0, 5);
         
         const guestCount = data.guests?.reduce((sum, g) => {
-            if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
-            return sum + 1;
+            if (g.rsvpStatus === 'yes') {
+                if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
+                return sum + 1;
+            }
+            return sum;
         }, 0) || 1;
         
-        const costPerGuest = totalSpent / guestCount;
+        const costPerGuest = totalActualSpent / guestCount;
         
-        return { totalBudget, totalSpent, utilization, categories, costPerGuest };
-    }, [data.budget, data.weddingInfo, data.guests]);
+        return { totalBudget, totalSpent, totalExpected, totalLinkedActual, totalActualSpent, utilization, categories, costPerGuest };
+    }, [data]);
     
     return (
         <Card title="💰 Budget Health Scorecard">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
                 <div style={{ padding: '12px', background: stats.utilization > 90 ? 'rgba(220, 53, 69, 0.1)' : 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
                     <div style={{ fontSize: '28px', fontWeight: 'bold', color: stats.utilization > 90 ? 'var(--color-error)' : 'inherit' }}>{stats.utilization}%</div>
                     <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Budget Used</div>
                 </div>
                 <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatCurrency(stats.totalSpent)}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{formatCurrency(stats.totalActualSpent)}</div>
                     <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Spent</div>
                 </div>
                 <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-success)' }}>{formatCurrency(stats.totalBudget - stats.totalSpent)}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{formatCurrency(stats.totalExpected)}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Expected (Linked)</div>
+                </div>
+                <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-success)' }}>{formatCurrency(stats.totalBudget - stats.totalActualSpent)}</div>
                     <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Remaining</div>
                 </div>
                 <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatCurrency(stats.costPerGuest)}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{formatCurrency(stats.costPerGuest)}</div>
                     <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Per Guest</div>
                 </div>
             </div>
             
-            <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>Category Spending</h4>
+            <div style={{ marginBottom: '12px', padding: '10px', background: 'var(--color-bg-secondary)', borderRadius: '8px', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span>Manual Actual:</span>
+                    <strong>{formatCurrency(stats.totalSpent)}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Linked Actual:</span>
+                    <strong>{formatCurrency(stats.totalLinkedActual)}</strong>
+                </div>
+            </div>
+            
+            <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>Top 5 Categories</h4>
             {stats.categories.map(cat => (
                 <div key={cat.name} style={{ marginBottom: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
@@ -268,6 +344,12 @@ const BudgetHealthScorecard = ({ data }) => {
                     </div>
                 </div>
             ))}
+            
+            {stats.utilization > 90 && (
+                <div style={{ marginTop: '12px', padding: '8px', background: 'rgba(220, 53, 69, 0.1)', borderRadius: '4px', fontSize: '12px', color: 'var(--color-error)' }}>
+                    🚨 Budget {stats.utilization}% used - review all pending expenses
+                </div>
+            )}
         </Card>
     );
 };
@@ -560,8 +642,33 @@ const SummaryStats = ({ data }) => {
         
         const totalBudget = data.weddingInfo?.totalBudget || 0;
         const spent = data.budget?.reduce((sum, cat) => sum + (cat.actual || 0), 0) || 0;
-        const remaining = totalBudget - spent;
-        const budgetUtil = totalBudget > 0 ? (spent / totalBudget * 100).toFixed(0) : 0;
+        
+        // Calculate linked actual
+        let linkedActual = 0;
+        data.vendors?.forEach(v => { if (v.budgetCategory) linkedActual += v.finalCost || 0; });
+        data.menus?.forEach(m => {
+            const eventTotal = m.items?.reduce((sum, item) => sum + (item.cost || 0), 0) || 0;
+            if (m.budgetCategory) linkedActual += eventTotal;
+            m.items?.forEach(item => { if (item.budgetCategory && item.budgetCategory !== m.budgetCategory) linkedActual += item.cost || 0; });
+        });
+        ['familyGifts', 'returnGifts', 'specialGifts'].forEach(giftType => {
+            data.giftsAndFavors?.[giftType]?.forEach(g => {
+                if (g.budgetCategory) {
+                    const actual = giftType === 'returnGifts' ? (g.totalCost || 0) : (g.actualCost || g.cost || 0);
+                    linkedActual += actual;
+                }
+            });
+        });
+        ['bride', 'groom', 'family'].forEach(shopType => {
+            data.shopping?.[shopType]?.forEach(list => {
+                list.items?.forEach(item => { if (item.budgetCategory) linkedActual += item.actualCost || 0; });
+            });
+        });
+        data.travel?.transport?.forEach(t => { if (t.budgetCategory) linkedActual += t.totalPrice || 0; });
+        
+        const totalSpent = spent + linkedActual;
+        const remaining = totalBudget - totalSpent;
+        const budgetUtil = totalBudget > 0 ? (totalSpent / totalBudget * 100).toFixed(0) : 0;
         
         const ceremonies = [...(data.ritualsAndCustoms?.preWedding || []), ...(data.ritualsAndCustoms?.mainCeremonies || [])];
         const completedCeremonies = ceremonies.filter(c => c.completed).length;
