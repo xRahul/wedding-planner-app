@@ -27,13 +27,31 @@ class StorageManager {
     }
 
     saveData(data) {
-        localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(data));
-        this.notifyListeners(data);
+        try {
+            if (!data) throw new Error('No data to save');
+            const serialized = JSON.stringify(data);
+            localStorage.setItem(this.LOCAL_STORAGE_KEY, serialized);
+            this.notifyListeners(data);
+            return true;
+        } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+                console.error('Storage quota exceeded');
+                throw new Error('Storage full. Please export and clear old data.');
+            }
+            console.error('Failed to save data:', error);
+            throw error;
+        }
     }
 
     loadData() {
-        const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
-        return localData ? JSON.parse(localData) : null;
+        try {
+            const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+            if (!localData) return null;
+            return JSON.parse(localData);
+        } catch (error) {
+            console.error('Failed to load data:', error);
+            return null;
+        }
     }
 
 

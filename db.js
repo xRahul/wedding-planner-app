@@ -18,19 +18,21 @@ class DatabaseManager {
 
     async connect() {
         try {
+            if (!DB_CONFIG.host || !DB_CONFIG.username) {
+                throw new Error('Database configuration missing');
+            }
+            
             const response = await fetch(`https://${DB_CONFIG.host}/sql`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Basic ${btoa(`${DB_CONFIG.username}:${DB_CONFIG.password}`)}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    query: 'SELECT 1'
-                })
+                body: JSON.stringify({ query: 'SELECT 1' })
             });
             
             if (!response.ok) {
-                throw new Error('Database connection failed');
+                throw new Error(`Database connection failed: ${response.status}`);
             }
             
             console.log('Database connected successfully');
@@ -43,6 +45,9 @@ class DatabaseManager {
 
     async saveData(data) {
         try {
+            if (!data) throw new Error('No data provided');
+            if (!DB_CONFIG.host) throw new Error('Database not configured');
+            
             const response = await fetch(`https://${DB_CONFIG.host}/sql`, {
                 method: 'POST',
                 headers: {
@@ -62,10 +67,10 @@ class DatabaseManager {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save data');
+                throw new Error(`Failed to save data: ${response.status}`);
             }
 
-            const result = await response.json();
+            await response.json();
             console.log('Data saved successfully');
             return true;
         } catch (error) {
@@ -76,6 +81,8 @@ class DatabaseManager {
 
     async loadData() {
         try {
+            if (!DB_CONFIG.host) throw new Error('Database not configured');
+            
             const response = await fetch(`https://${DB_CONFIG.host}/sql`, {
                 method: 'POST',
                 headers: {
@@ -93,7 +100,7 @@ class DatabaseManager {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to load data');
+                throw new Error(`Failed to load data: ${response.status}`);
             }
 
             const result = await response.json();

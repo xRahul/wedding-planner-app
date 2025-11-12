@@ -41,6 +41,7 @@ const WeddingPlannerApp = () => {
 
     const updateData = (key, value) => {
         try {
+            if (!key) throw new Error('Invalid key');
             const newData = { ...data, [key]: value };
             setData(newData);
             setError(null);
@@ -49,6 +50,14 @@ const WeddingPlannerApp = () => {
             setError('Failed to update data. Please try again.');
         }
     };
+
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner">Loading...</div>
+            </div>
+        );
+    }
 
     return (
         <div>

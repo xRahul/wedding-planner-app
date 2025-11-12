@@ -112,18 +112,29 @@ const validateWeddingInfo = (info) => {
 };
 
 const validateGuest = (guest) => {
-    const errors = {};
-    if (!guest.name?.trim()) errors.name = 'Name is required';
-    if (!guest.category) errors.category = 'Category is required';
-    if (!guest.side) errors.side = 'Bride/Groom side must be specified';
-    if (!guest.relation) errors.relation = 'Relation is required';
-    if (guest.phone && !/^[\d\s+()-]+$/.test(guest.phone)) errors.phone = 'Invalid phone number';
-    return Object.keys(errors).length ? errors : null;
+    try {
+        if (!guest || typeof guest !== 'object') return { error: 'Invalid guest data' };
+        const errors = {};
+        if (!guest.name?.trim()) errors.name = 'Name is required';
+        if (!guest.category) errors.category = 'Category is required';
+        if (!guest.side) errors.side = 'Bride/Groom side must be specified';
+        if (!guest.relation) errors.relation = 'Relation is required';
+        if (guest.phone && !/^[\d\s+()-]+$/.test(guest.phone)) errors.phone = 'Invalid phone number';
+        return Object.keys(errors).length ? errors : null;
+    } catch (error) {
+        console.error('Validation error:', error);
+        return { error: 'Validation failed' };
+    }
 };
 
 const isValidDate = (dateString) => {
-    const date = new Date(dateString);
-    return date instanceof Date && !isNaN(date);
+    try {
+        if (!dateString) return false;
+        const date = new Date(dateString);
+        return date instanceof Date && !isNaN(date);
+    } catch (error) {
+        return false;
+    }
 };
 
 const validateVendor = (vendor) => {
@@ -162,20 +173,25 @@ const generateId = () => {
 };
 
 const formatDate = (dateString, withTime = false) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-        console.error('Invalid date string:', dateString);
+    try {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            console.error('Invalid date string:', dateString);
+            return '';
+        }
+        const options = { 
+            weekday: 'short',
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {})
+        };
+        return date.toLocaleDateString('en-IN', options);
+    } catch (error) {
+        console.error('Date formatting error:', error);
         return '';
     }
-    const options = { 
-        weekday: 'short',
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {})
-    };
-    return date.toLocaleDateString('en-IN', options);
 };
 
 const isDatePassed = (dateString) => {
@@ -186,11 +202,18 @@ const isDatePassed = (dateString) => {
 };
 
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-        maximumFractionDigits: 0
-    }).format(amount);
+    try {
+        const num = Number(amount);
+        if (isNaN(num)) return '₹0';
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(num);
+    } catch (error) {
+        console.error('Currency formatting error:', error);
+        return '₹0';
+    }
 };
 
 const getDayLabel = (offset) => {

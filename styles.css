@@ -411,11 +411,23 @@ body {
 
 /* Error Handling */
 .error-banner {
-    background-color: var(--color-bg);
+    background-color: #FFF5F5;
     border: 2px solid var(--color-error);
     border-radius: var(--radius);
-    margin: var(--space-sm) var(--space-md);
-    padding: var(--space-sm) var(--space-md);
+    margin: var(--space-md);
+    padding: var(--space-md);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .error-banner .error-message {
@@ -424,6 +436,7 @@ body {
     align-items: center;
     justify-content: space-between;
     font-weight: 500;
+    gap: var(--space-md);
 }
 
 .error-message {
@@ -435,6 +448,27 @@ body {
 .form-input.error {
     border-color: var(--color-error);
     background-color: #FFF5F5;
+}
+
+/* Loading State */
+.loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--color-bg);
+}
+
+.loading-spinner {
+    font-size: 18px;
+    color: var(--color-primary-dark);
+    font-weight: 500;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 /* Utility Classes */
