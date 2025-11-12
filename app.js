@@ -45,6 +45,10 @@ const WeddingPlannerApp = () => {
             if (!key) throw new Error('Invalid key');
             if (value === undefined) throw new Error('Invalid value');
             const newData = { ...data, [key]: value };
+            // Auto-calculate totalBudget when weddingInfo is updated
+            if (key === 'weddingInfo') {
+                newData.weddingInfo.totalBudget = (value.brideBudget || 0) + (value.groomBudget || 0);
+            }
             setData(newData);
             setError(null);
         } catch (err) {

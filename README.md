@@ -25,6 +25,9 @@ This is a full-featured wedding planning application built with React 18 (via CD
 - **Custom Vendor Types**: Add your own vendor categories
 - **Availability Slots**: Track multiple availability windows with date and time
 - **Cost Tracking**: Estimated vs final costs, advance payments
+- **Payment Responsibility**: Track who should pay (bride/groom/split)
+- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending)
+- **Budget Category Linking**: Link vendors to budget categories for auto-calculation
 - **Status Management**: Pending/Booked/Confirmed
 - **Contact Details**: Phone, email, notes
 - **Booking Dates**: Track when vendors are booked
@@ -33,8 +36,13 @@ This is a full-featured wedding planning application built with React 18 (via CD
 - **12 Budget Categories**: Venue, catering, decor, bride, groom, pandit & rituals, entertainment, photography, invitations, gifts, transport, other
 - **Subcategories**: Break down each category further
 - **Planned vs Actual**: Track estimated and actual spending
+- **Bride/Groom Budget Tracking**: Separate budget tracking for bride and groom sides
+- **Auto-Calculation**: Budget automatically calculates from linked items (vendors, menus, gifts, shopping, travel)
+- **Payment Responsibility**: Track who should pay (bride/groom/split) for each expense
+- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending)
+- **Expandable Categories**: Click to expand and view all linked items with individual costs
 - **Progress Visualization**: Visual progress bars and percentage tracking
-- **Real-time Calculations**: Automatic totals and remaining budget
+- **Real-time Calculations**: Automatic totals and remaining budget by side
 
 ### ✅ Task Management
 - **Priority Levels**: Low/Medium/High
@@ -55,16 +63,24 @@ This is a full-featured wedding planning application built with React 18 (via CD
 
 ### 🍽️ Menu Planning
 - **Event-Based Menus**: Create separate menus for different events
-- **Guest Count**: Track expected attendees per event
-- **Menu Items**: Add dishes with costs
-- **Dietary Tracking**: Automatic Veg/Jain guest counts
-- **Cost Calculation**: Automatic total cost per menu
+- **Guest Count**: Track expected and attended guests per event
+- **Menu Items**: Add dishes with price per plate
+- **Item Editing**: Full edit support for menu items
+- **Payment Responsibility**: Track who should pay (bride/groom/split) per item
+- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending) per item
+- **Budget Category Linking**: Link menu items to budget categories for auto-calculation
+- **Cost Calculation**: Automatic total cost per menu (expected vs actual)
+- **Variance Tracking**: Track cost variance between expected and actual
+- **North Indian Menu Templates**: Pre-built menu items with typical pricing
 
 ### 🎁 Gifts & Favors
 - **Family Gifts**: Track gifts for family members by ceremony
 - **Return Gifts**: Plan return gifts for guests
 - **Special Gifts**: Track special gifts for VIPs
 - **Cost Tracking**: Budget and actual costs
+- **Payment Responsibility**: Track who should pay (bride/groom/split)
+- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending)
+- **Budget Category Linking**: Link gifts to budget categories for auto-calculation
 - **Quantity Management**: Track quantities needed
 - **Status**: Purchased/Pending
 
@@ -72,14 +88,21 @@ This is a full-featured wedding planning application built with React 18 (via CD
 - **Bride Shopping**: Organize by event (Wedding, Mehendi, Sangeet, etc.)
 - **Groom Shopping**: Separate shopping list for groom
 - **Family Shopping**: Track items needed for family members
-- **Item Status**: Mark items as purchased
-- **Cost Tracking**: Track estimated and actual costs
+- **Item Status**: Pending/Ordered/Received/Completed
+- **Payment Responsibility**: Track who should pay (bride/groom/split)
+- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending)
+- **Budget Category Linking**: Link shopping items to budget categories for auto-calculation
+- **Cost Tracking**: Track budget per item
+- **Shopping Templates**: Pre-built shopping lists for bride, groom, and family
 
 ### 🚌 Travel & Transport
 - **Vehicle Management**: Track buses, cars, tempo travelers, etc.
 - **Date Ranges**: From/to dates for each vehicle
 - **Capacity**: Track seats available
 - **Cost**: Per vehicle and total costs
+- **Payment Responsibility**: Track who should pay (bride/groom/split)
+- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending)
+- **Budget Category Linking**: Link transport to budget categories for auto-calculation
 - **Route Information**: Track pickup/drop locations
 - **Guest Matching**: Compare transport capacity with guest needs
 
@@ -301,10 +324,15 @@ The app can be installed as a Progressive Web App:
 - Filter by status or priority
 
 ### Budget Tracking
+- Set bride and groom budgets in Settings
 - Add budget items to categories
 - Track planned vs actual costs
-- View progress bars and percentages
-- Monitor remaining budget
+- Budget auto-calculates from linked items (vendors, menus, gifts, shopping, travel)
+- Track payment responsibility (bride/groom/split) for all expenses
+- Track who actually paid (bride/groom/split/pending)
+- Click categories to expand and view linked items
+- View progress bars and percentages by side
+- Monitor remaining budget for bride and groom sides
 
 ### Rituals Planning
 - Add pre-wedding and main ceremonies
@@ -397,13 +425,21 @@ window.securityUtils.encryptGuestData(guest);
 - **Custom Hooks**: 4 shared hooks
 - **Code Reuse**: ~200 lines eliminated through shared components
 - **Reduction**: ~18% code reduction with improved maintainability
+- **Budget Integration**: 5 components with full budget category and payment tracking
+- **Auto-Calculation**: Budget automatically calculates from 5 linked data sources
 
-## 🔧 Recent Improvements (v2.2)
+## 🔧 Recent Improvements (v2.4)
 
-- **Dietary Preferences**: Simplified to Veg and Jain options only (removed non-veg)
-- **Notification System**: Auto-dismissing notification banners for better UX (no modal blocking)
-- **Guest Table**: Improved fonts, sizing, and column ordering (Phone/Room before Notes)
-- **Accessibility**: Fixed skip link positioning for better keyboard navigation
+- **Payment Responsibility Tracking**: Track who should pay (bride/groom/split) for vendors, menus, gifts, shopping, and travel
+- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending) for all budget items
+- **Bride/Groom Budget Tracking**: Separate budget tracking for bride and groom sides with automatic calculation
+- **Budget Auto-Calculation**: Budget automatically calculates from linked items (vendors, menus, gifts, shopping, travel)
+- **Expandable Budget Categories**: Click to expand categories and view all linked items with individual costs
+- **Menu Item Editing**: Full edit support for menu items with payment tracking (v2.3)
+- **Dietary Preferences**: Simplified to Veg and Jain options only (v2.2)
+- **Notification System**: Auto-dismissing notification banners for better UX (v2.2)
+- **Guest Table**: Improved fonts, sizing, and column ordering (v2.2)
+- **Accessibility**: Fixed skip link positioning for better keyboard navigation (v2.2)
 - **Service Worker**: Fixed cache URLs for proper offline functionality (v2.1)
 - **Validation**: Enhanced all validators with comprehensive checks and error handling (v2.1)
 - **Error Prevention**: Added division-by-zero guards in dashboard calculations (v2.1)

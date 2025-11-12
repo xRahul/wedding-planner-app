@@ -34,7 +34,9 @@ COMPREHENSIVE TECHNICAL REFERENCE FOR AI ASSISTANTS - All critical patterns, dat
     groomName: "",
     weddingDate: "",
     location: "",
-    totalBudget: 0
+    totalBudget: 0,
+    brideBudget: 0,
+    groomBudget: 0
   },
   savedGuestCategories: ['family', 'friends', 'relatives', 'family_friends', 'colleagues', 'vendors'],
   savedGuestRelations: ['maternal_uncle', 'maternal_aunt', 'paternal_uncle', 'paternal_aunt', 'father_sister', 'mother_sister', 'cousin', 'family_friend', 'college_friend', 'work_colleague', 'neighbor'],
@@ -62,7 +64,8 @@ COMPREHENSIVE TECHNICAL REFERENCE FOR AI ASSISTANTS - All critical patterns, dat
     {
       id, type, name, contact, email, estimatedCost, finalCost, status: 'pending'|'booked'|'confirmed'|'cancelled',
       availability: [{ from, fromTime, to, toTime }], bookedDate, notes,
-      advancePaid, paymentStatus, rating, reviews, budgetCategory
+      advancePaid, paymentStatus, rating, reviews, budgetCategory,
+      paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
     }
   ],
   budget: [
@@ -72,11 +75,20 @@ COMPREHENSIVE TECHNICAL REFERENCE FOR AI ASSISTANTS - All critical patterns, dat
     { id, description, deadline, assignedTo, status: 'pending'|'done', priority: 'low'|'medium'|'high', category: 'vendor'|'preparation'|'shopping'|'transport'|'decoration'|'catering'|'general' }
   ],
   menus: [
-    { id, eventName, guestCount, budgetCategory, items: [{ name, cost, budgetCategory }], vegCount, jainCount }
+    { 
+      id, name, expectedGuests, attendedGuests, budgetCategory, 
+      items: [{ 
+        name, pricePerPlate, description, budgetCategory, 
+        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending' 
+      }] 
+    }
   ],
   travel: {
     transport: [
-      { id, vehicleType, fromDate, toDate, seats, route, totalPrice, budgetCategory, notes }
+      { 
+        id, vehicleType, fromDate, toDate, seats, route, totalPrice, budgetCategory, notes,
+        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
+      }
     ]
   },
   ritualsAndCustoms: {
@@ -85,14 +97,41 @@ COMPREHENSIVE TECHNICAL REFERENCE FOR AI ASSISTANTS - All critical patterns, dat
     customs: [{ id, name, description, completed }]
   },
   giftsAndFavors: {
-    familyGifts: [{ id, recipientName, ceremony, giftItem, estimatedCost, actualCost, budgetCategory, status: 'purchased'|'pending' }],
-    returnGifts: [{ id, giftItem, quantity, costPerItem, totalCost, budgetCategory, status }],
-    specialGifts: [{ id, recipientName, occasion, giftItem, cost, budgetCategory, status }]
+    familyGifts: [{ 
+      id, recipientName, ceremony, giftItem, estimatedCost, actualCost, budgetCategory, status: 'purchased'|'pending',
+      paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
+    }],
+    returnGifts: [{ 
+      id, giftItem, quantity, costPerItem, totalCost, budgetCategory, status,
+      paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
+    }],
+    specialGifts: [{ 
+      id, recipientName, occasion, giftItem, cost, budgetCategory, status,
+      paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
+    }]
   },
   shopping: {
-    bride: [{ event, items: [{ id, item, purchased, estimatedCost, actualCost, budgetCategory }] }],
-    groom: [{ event, items: [{ id, item, purchased, estimatedCost, actualCost, budgetCategory }] }],
-    family: [{ for, items: [{ id, item, purchased, estimatedCost, actualCost, budgetCategory }] }]
+    bride: [{ 
+      event, 
+      items: [{ 
+        id, item, budget, budgetCategory, status: 'pending'|'ordered'|'received'|'completed', notes,
+        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
+      }] 
+    }],
+    groom: [{ 
+      event, 
+      items: [{ 
+        id, item, budget, budgetCategory, status: 'pending'|'ordered'|'received'|'completed', notes,
+        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
+      }] 
+    }],
+    family: [{ 
+      for, 
+      items: [{ 
+        id, item, budget, budgetCategory, status: 'pending'|'ordered'|'received'|'completed', notes,
+        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
+      }] 
+    }]
   },
   traditions: {
     preWedding: [{ id, name, description, date, completed }],
@@ -152,11 +191,11 @@ saveData(data) // async, saves to localStorage
 
 // Validation (return errors object or null)
 validateGuest(guest) // checks name, category, side, relation, phone, email, giftAmount
-validateVendor(vendor) // checks name, type, email, phone, costs
+validateVendor(vendor) // checks name, type, email, phone, costs, paymentResponsibility, paidBy
 validateTimelineEvent(event) // checks ceremony, date
 validateMenuItem(item) // checks name, cost
 validateTravelItem(item) // checks vehicleType, dates, seats, price
-validateWeddingInfo(info) // checks brideName, groomName
+validateWeddingInfo(info) // checks brideName, groomName, brideBudget, groomBudget
 isValidDate(dateString) // returns bool
 
 // Formatters
@@ -276,13 +315,17 @@ const FeatureModal = ({ item, onSave, onClose }) => {
 
 **Custom Fields**: savedGuestCategories, savedGuestRelations, savedDietaryPreferences, savedFamilyRelations - all managed via SelectOrAddField
 
-## BUDGET CATEGORY SUPPORT
+## BUDGET CATEGORY & PAYMENT RESPONSIBILITY SUPPORT
 
 **Components with Budget Category**: Vendors, Menus (events + items), Gifts (all types), Shopping (all items), Travel
 
 **Budget Category Field**: Optional dropdown in modals, displays as badge in tables
 
 **Budget Categories**: venue, catering, decor, bride, groom, pandit_and_rituals, entertainment, photography, invitations, gifts, transport, other
+
+**Payment Responsibility**: All budget-linked items support:
+- paymentResponsibility: 'bride' | 'groom' | 'split' (who should pay)
+- paidBy: 'bride' | 'groom' | 'split' | 'pending' (who actually paid)
 
 **Implementation Pattern**:
 ```javascript
@@ -291,7 +334,7 @@ const budgetCategories = budget?.map(b => ({
   label: b.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 })) || [];
 
-// In modal
+// In modal - Budget Category
 <select className="form-select" value={formData.budgetCategory || ''} onChange={e => setFormData({ ...formData, budgetCategory: e.target.value })}>
   <option value="">Select category (optional)</option>
   {budgetCategories.map(cat => (
@@ -299,10 +342,40 @@ const budgetCategories = budget?.map(b => ({
   ))}
 </select>
 
-// In table
+// In modal - Payment Responsibility
+<select className="form-select" value={formData.paymentResponsibility || ''} onChange={e => setFormData({ ...formData, paymentResponsibility: e.target.value })}>
+  <option value="">-- Select --</option>
+  <option value="bride">👰 Bride Side</option>
+  <option value="groom">🤵 Groom Side</option>
+  <option value="split">🤝 Split (Both)</option>
+</select>
+
+// In modal - Paid By
+<select className="form-select" value={formData.paidBy || 'pending'} onChange={e => setFormData({ ...formData, paidBy: e.target.value })}>
+  <option value="pending">Pending</option>
+  <option value="bride">👰 Bride Side</option>
+  <option value="groom">🤵 Groom Side</option>
+  <option value="split">🤝 Split (Both)</option>
+</select>
+
+// In table - Budget Category
 {item.budgetCategory ? (
   <span className="badge badge-info">{item.budgetCategory.replace(/_/g, ' ')}</span>
 ) : '-'}
+
+// In table - Payment Responsibility
+{item.paymentResponsibility ? (
+  <span className={`badge ${item.paymentResponsibility === 'bride' ? 'badge-info' : item.paymentResponsibility === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+    {item.paymentResponsibility === 'bride' ? '👰 Bride' : item.paymentResponsibility === 'groom' ? '🤵 Groom' : '🤝 Split'}
+  </span>
+) : '-'}
+
+// In table - Paid By
+{item.paidBy && item.paidBy !== 'pending' ? (
+  <span className={`badge ${item.paidBy === 'bride' ? 'badge-info' : item.paidBy === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+    {item.paidBy === 'bride' ? '👰 Bride' : item.paidBy === 'groom' ? '🤵 Groom' : '🤝 Split'}
+  </span>
+) : <span className="badge badge-error">Pending</span>}
 ```
 
 ## VENDOR COMPONENT SPECIFICS
@@ -345,7 +418,25 @@ const budgetCategories = budget?.map(b => ({
 
 **Total Budget**: From weddingInfo.totalBudget
 
+**Bride/Groom Budgets**: Separate tracking via weddingInfo.brideBudget and weddingInfo.groomBudget
+
 **Budget Health**: totalActual vs totalBudget comparison
+
+**Auto-Calculation from Linked Items**: Budget automatically calculates expected and actual costs from:
+- Vendors: estimatedCost → expected, finalCost → actual
+- Menus: pricePerPlate × expectedGuests → expected, pricePerPlate × attendedGuests → actual
+- Gifts: totalCost → both expected and actual
+- Shopping: budget field → both expected and actual
+- Travel: totalPrice → both expected and actual
+
+**Payment Responsibility Tracking**: All linked items track paymentResponsibility (bride/groom/split) and paidBy (bride/groom/split/pending)
+
+**Side-Based Budget Calculation**: Automatically splits costs by bride/groom side based on paymentResponsibility:
+- bride: Full cost to bride side
+- groom: Full cost to groom side
+- split: 50% to each side
+
+**Expandable Categories**: Click category row to expand and view all linked items with their individual costs
 
 ## APP.JS STRUCTURE
 
@@ -525,6 +616,7 @@ const validateMyData = (item) => {
 
 ## VERSION HISTORY
 
+**v2.4.0**: Payment responsibility tracking (bride/groom/split) for vendors, menus, gifts, shopping, travel; bride/groom budget tracking; budget auto-calculation from linked items; menu item editing with payment tracking
 **v2.3.0**: Budget category support for menus (events + items), gifts (all types), shopping (all items), travel; menu item editing
 **v2.2.0**: Dietary simplified to veg/jain only, notification system with auto-dismiss, guest table improvements, skip link fix
 **v2.1.0**: Service worker cache fix, enhanced validators, division-by-zero guards, async storage improvements

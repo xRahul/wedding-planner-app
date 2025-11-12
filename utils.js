@@ -75,11 +75,16 @@ const loadData = async () => {
             return { ...DEFAULT_DATA };
         }
         
-        return {
+        const loadedData = {
             ...DEFAULT_DATA,
             ...data,
             weddingInfo: { ...DEFAULT_DATA.weddingInfo, ...data.weddingInfo }
         };
+        
+        // Auto-calculate totalBudget from bride + groom budgets
+        loadedData.weddingInfo.totalBudget = (loadedData.weddingInfo.brideBudget || 0) + (loadedData.weddingInfo.groomBudget || 0);
+        
+        return loadedData;
     } catch (error) {
         console.error('Error loading data:', error);
         return { ...DEFAULT_DATA };

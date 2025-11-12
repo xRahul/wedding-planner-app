@@ -117,9 +117,9 @@ const { useState, useEffect, useMemo } = React;
                                     <div>
                                         <p><strong>Wedding Date:</strong> {formatDate(weddingInfo.weddingDate)}</p>
                                         <p><strong>Location:</strong> {weddingInfo.location}</p>
-                                        <p><strong>Total Budget:</strong> {formatCurrency(weddingInfo.totalBudget)}</p>
                                         <p><strong>👰 Bride Budget:</strong> {formatCurrency(weddingInfo.brideBudget || 0)}</p>
                                         <p><strong>🤵 Groom Budget:</strong> {formatCurrency(weddingInfo.groomBudget || 0)}</p>
+                                        <p><strong>Total Budget:</strong> {formatCurrency((weddingInfo.brideBudget || 0) + (weddingInfo.groomBudget || 0))}</p>
                                     </div>
                                 </div>
                                 <button className="btn btn-primary" onClick={() => setEditMode(true)}>Edit Information</button>
@@ -188,21 +188,6 @@ const { useState, useEffect, useMemo } = React;
                                         {formErrors.location && <div className="error-message">{formErrors.location}</div>}
                                     </div>
                                     <div className="form-group">
-                                        <label className="form-label">Total Budget (₹)</label>
-                                        <input 
-                                            type="number"
-                                            className={`form-input ${formErrors.totalBudget ? 'error' : ''}`}
-                                            value={formData.totalBudget}
-                                            onChange={e => {
-                                                setFormData({ ...formData, totalBudget: parseFloat(e.target.value) || 0 });
-                                                if (formErrors.totalBudget) {
-                                                    setFormErrors({ ...formErrors, totalBudget: null });
-                                                }
-                                            }}
-                                        />
-                                        {formErrors.totalBudget && <div className="error-message">{formErrors.totalBudget}</div>}
-                                    </div>
-                                    <div className="form-group">
                                         <label className="form-label">👰 Bride Side Budget (₹)</label>
                                         <input 
                                             type="number"
@@ -231,6 +216,17 @@ const { useState, useEffect, useMemo } = React;
                                             }}
                                         />
                                         {formErrors.groomBudget && <div className="error-message">{formErrors.groomBudget}</div>}
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Total Budget (₹)</label>
+                                        <input 
+                                            type="number"
+                                            className="form-input"
+                                            value={(formData.brideBudget || 0) + (formData.groomBudget || 0)}
+                                            disabled
+                                            style={{ backgroundColor: 'var(--color-bg-secondary)', cursor: 'not-allowed' }}
+                                        />
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Auto-calculated from bride + groom budgets</div>
                                     </div>
                                 </div>
                                 <div style={{ marginTop: '16px' }}>
