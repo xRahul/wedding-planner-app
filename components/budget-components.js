@@ -72,7 +72,8 @@ const Budget = ({ budget, updateData, totalBudget, allData }) => {
                     type: 'Vendor',
                     name: v.name,
                     expected: v.estimatedCost || 0,
-                    actual: v.finalCost || 0
+                    actual: v.finalCost || 0,
+                    paymentResponsibility: v.paymentResponsibility
                 });
             }
         });
@@ -89,7 +90,8 @@ const Budget = ({ budget, updateData, totalBudget, allData }) => {
                         type: 'Menu',
                         name: `${m.name} - ${item.name}`,
                         expected: expected,
-                        actual: actual
+                        actual: actual,
+                        paymentResponsibility: item.paymentResponsibility
                     });
                 }
             });
@@ -105,7 +107,8 @@ const Budget = ({ budget, updateData, totalBudget, allData }) => {
                         type: 'Gift',
                         name: g.recipient || g.giftName || 'Gift',
                         expected: cost,
-                        actual: cost
+                        actual: cost,
+                        paymentResponsibility: g.paymentResponsibility
                     });
                 }
             });
@@ -121,7 +124,8 @@ const Budget = ({ budget, updateData, totalBudget, allData }) => {
                             type: 'Shopping',
                             name: `${shopType} - ${item.item}`,
                             expected: item.budget || 0,
-                            actual: item.budget || 0
+                            actual: item.budget || 0,
+                            paymentResponsibility: item.paymentResponsibility
                         });
                     }
                 });
@@ -136,7 +140,8 @@ const Budget = ({ budget, updateData, totalBudget, allData }) => {
                     type: 'Transport',
                     name: t.vehicleType,
                     expected: t.totalPrice || 0,
-                    actual: t.totalPrice || 0
+                    actual: t.totalPrice || 0,
+                    paymentResponsibility: t.paymentResponsibility
                 });
             }
         });
@@ -148,20 +153,47 @@ const Budget = ({ budget, updateData, totalBudget, allData }) => {
         const totalPlanned = budget.reduce((sum, cat) => sum + (cat.planned || 0), 0);
         const totalManualActual = budget.reduce((sum, cat) => sum + (cat.actual || 0), 0);
         
-        // Calculate expected and actual from linked items
+        // Calculate expected and actual from linked items by side
         let totalExpected = 0;
         let totalLinkedActual = 0;
+        let brideExpected = 0;
+        let brideActual = 0;
+        let groomExpected = 0;
+        let groomActual = 0;
+        
         Object.values(linkedItems).forEach(items => {
             items.forEach(item => {
                 totalExpected += item.expected || 0;
                 totalLinkedActual += item.actual || 0;
+                
+                if (item.paymentResponsibility === 'bride') {
+                    brideExpected += item.expected || 0;
+                    brideActual += item.actual || 0;
+                } else if (item.paymentResponsibility === 'groom') {
+                    groomExpected += item.expected || 0;
+                    groomActual += item.actual || 0;
+                } else if (item.paymentResponsibility === 'split') {
+                    const halfExpected = (item.expected || 0) / 2;
+                    const halfActual = (item.actual || 0) / 2;
+                    brideExpected += halfExpected;
+                    brideActual += halfActual;
+                    groomExpected += halfExpected;
+                    groomActual += halfActual;
+                }
             });
         });
         
         const totalActual = totalManualActual + totalLinkedActual;
         const remaining = totalBudget - totalActual;
-        return { totalPlanned, totalManualActual, totalExpected, totalLinkedActual, totalActual, remaining };
-    }, [budget, totalBudget, linkedItems]);
+        const brideRemaining = (allData?.weddingInfo?.brideBudget || 0) - brideActual;
+        const groomRemaining = (allData?.weddingInfo?.groomBudget || 0) - groomActual;
+        
+        return { 
+            totalPlanned, totalManualActual, totalExpected, totalLinkedActual, totalActual, remaining,
+            brideExpected, brideActual, brideRemaining,
+            groomExpected, groomActual, groomRemaining
+        };
+    }, [budget, totalBudget, linkedItems, allData]);
 
     return (
         <div>
@@ -179,14 +211,6 @@ const Budget = ({ budget, updateData, totalBudget, allData }) => {
                         <div className="stat-label">Total Budget</div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-value">{formatCurrency(totals.totalPlanned)}</div>
-                        <div className="stat-label">Planned</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-value">{formatCurrency(totals.totalExpected)}</div>
-                        <div className="stat-label">Expected</div>
-                    </div>
-                    <div className="stat-card">
                         <div className="stat-value">{formatCurrency(totals.totalActual)}</div>
                         <div className="stat-label">Total Spent</div>
                     </div>
@@ -199,14 +223,59 @@ const Budget = ({ budget, updateData, totalBudget, allData }) => {
                             <div style={{ fontSize: '10px', color: 'var(--color-error)', marginTop: '4px' }}>Over Budget!</div>
                         )}
                     </div>
-                    <div className="stat-card" style={{ background: ((totals.totalActual / totalBudget) * 100) > 90 ? 'rgba(255, 193, 7, 0.1)' : 'var(--color-bg-secondary)' }}>
-                        <div className="stat-value" style={{ color: ((totals.totalActual / totalBudget) * 100) > 90 ? 'var(--color-warning)' : 'inherit' }}>
-                            {totalBudget > 0 ? ((totals.totalActual / totalBudget) * 100).toFixed(1) : 0}%
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+                    <div style={{ padding: '16px', background: 'rgba(74, 144, 226, 0.1)', borderRadius: '8px', border: '2px solid var(--color-info)' }}>
+                        <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-info)' }}>👰 Bride Side Budget</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Budget</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{formatCurrency(allData?.weddingInfo?.brideBudget || 0)}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Spent</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{formatCurrency(totals.brideActual)}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Remaining</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold', color: totals.brideRemaining >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}>
+                                    {formatCurrency(totals.brideRemaining)}
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Used</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                                    {(allData?.weddingInfo?.brideBudget || 0) > 0 ? ((totals.brideActual / (allData?.weddingInfo?.brideBudget || 1)) * 100).toFixed(1) : 0}%
+                                </div>
+                            </div>
                         </div>
-                        <div className="stat-label">Budget Used</div>
-                        {((totals.totalActual / totalBudget) * 100) > 90 && (
-                            <div style={{ fontSize: '10px', color: 'var(--color-warning)', marginTop: '4px' }}>Nearing Limit</div>
-                        )}
+                    </div>
+                    
+                    <div style={{ padding: '16px', background: 'rgba(39, 174, 96, 0.1)', borderRadius: '8px', border: '2px solid var(--color-success)' }}>
+                        <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-success)' }}>🤵 Groom Side Budget</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Budget</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{formatCurrency(allData?.weddingInfo?.groomBudget || 0)}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Spent</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{formatCurrency(totals.groomActual)}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Remaining</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold', color: totals.groomRemaining >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}>
+                                    {formatCurrency(totals.groomRemaining)}
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Used</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                                    {(allData?.weddingInfo?.groomBudget || 0) > 0 ? ((totals.groomActual / (allData?.weddingInfo?.groomBudget || 1)) * 100).toFixed(1) : 0}%
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

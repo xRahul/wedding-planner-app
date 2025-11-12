@@ -73,6 +73,8 @@ const Vendors = ({ vendors, updateData, budget }) => {
                                     <th>Email</th>
                                     <th>Estimated Cost</th>
                                     <th>Final Cost</th>
+                                    <th>Payment Responsibility</th>
+                                    <th>Paid By</th>
                                     <th>Availability</th>
                                     <th>Booked Date</th>
                                     <th>Status</th>
@@ -91,6 +93,20 @@ const Vendors = ({ vendors, updateData, budget }) => {
                                         <td>{formatCurrency(vendor.estimatedCost || vendor.cost || 0)}</td>
                                         <td style={{ fontWeight: 'bold', color: vendor.finalCost > 0 ? 'var(--color-success)' : 'inherit' }}>
                                             {vendor.finalCost > 0 ? formatCurrency(vendor.finalCost) : '-'}
+                                        </td>
+                                        <td>
+                                            {vendor.paymentResponsibility ? (
+                                                <span className={`badge ${vendor.paymentResponsibility === 'bride' ? 'badge-info' : vendor.paymentResponsibility === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                    {vendor.paymentResponsibility === 'bride' ? '👰 Bride' : vendor.paymentResponsibility === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                </span>
+                                            ) : '-'}
+                                        </td>
+                                        <td>
+                                            {vendor.paidBy && vendor.paidBy !== 'pending' ? (
+                                                <span className={`badge ${vendor.paidBy === 'bride' ? 'badge-info' : vendor.paidBy === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                    {vendor.paidBy === 'bride' ? '👰 Bride' : vendor.paidBy === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                </span>
+                                            ) : <span className="badge badge-error">Pending</span>}
                                         </td>
                                         <td style={{ fontSize: '10px', maxWidth: '200px' }}>
                                             {vendor.availability && vendor.availability.length > 0 ? (
@@ -350,6 +366,32 @@ const VendorModal = ({ vendor, onSave, onClose, budget }) => {
                             <option value="booked">Booked</option>
                             <option value="confirmed">Confirmed</option>
                             <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Payment Responsibility</label>
+                        <select 
+                            className="form-select"
+                            value={formData.paymentResponsibility || ''}
+                            onChange={e => setFormData({ ...formData, paymentResponsibility: e.target.value })}
+                        >
+                            <option value="">-- Select --</option>
+                            <option value="bride">👰 Bride Side</option>
+                            <option value="groom">🤵 Groom Side</option>
+                            <option value="split">🤝 Split (Both)</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Paid By</label>
+                        <select 
+                            className="form-select"
+                            value={formData.paidBy || 'pending'}
+                            onChange={e => setFormData({ ...formData, paidBy: e.target.value })}
+                        >
+                            <option value="pending">Pending</option>
+                            <option value="bride">👰 Bride Side</option>
+                            <option value="groom">🤵 Groom Side</option>
+                            <option value="split">🤝 Split (Both)</option>
                         </select>
                     </div>
                     <div className="form-group">

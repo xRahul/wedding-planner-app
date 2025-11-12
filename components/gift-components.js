@@ -145,6 +145,8 @@ const Gifts = ({ giftsAndFavors, updateData, budget }) => {
                                         <th>Price/Gift</th>
                                         <th>Total Cost</th>
                                         <th>Budget Category</th>
+                                        <th>Payment Responsibility</th>
+                                        <th>Paid By</th>
                                         <th>Status</th>
                                         <th>Purchased From</th>
                                         <th>Notes</th>
@@ -164,6 +166,20 @@ const Gifts = ({ giftsAndFavors, updateData, budget }) => {
                                                 {gift.budgetCategory ? (
                                                     <span className="badge badge-info">{gift.budgetCategory.replace(/_/g, ' ')}</span>
                                                 ) : '-'}
+                                            </td>
+                                            <td>
+                                                {gift.paymentResponsibility ? (
+                                                    <span className={`badge ${gift.paymentResponsibility === 'bride' ? 'badge-info' : gift.paymentResponsibility === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                        {gift.paymentResponsibility === 'bride' ? '👰 Bride' : gift.paymentResponsibility === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                    </span>
+                                                ) : '-'}
+                                            </td>
+                                            <td>
+                                                {gift.paidBy && gift.paidBy !== 'pending' ? (
+                                                    <span className={`badge ${gift.paidBy === 'bride' ? 'badge-info' : gift.paidBy === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                        {gift.paidBy === 'bride' ? '👰 Bride' : gift.paidBy === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                    </span>
+                                                ) : <span className="badge badge-error">Pending</span>}
                                             </td>
                                             <td>
                                                 <span className={`badge ${gift.status === 'purchased' ? 'badge-success' : gift.status === 'ordered' ? 'badge-info' : 'badge-warning'}`}>
@@ -232,6 +248,8 @@ const Gifts = ({ giftsAndFavors, updateData, budget }) => {
                                         <th>Quantity</th>
                                         <th>Price/Gift</th>
                                         <th>Total Cost</th>
+                                        <th>Payment Responsibility</th>
+                                        <th>Paid By</th>
                                         <th>Status</th>
                                         <th>Purchased From</th>
                                         <th>Notes</th>
@@ -247,6 +265,20 @@ const Gifts = ({ giftsAndFavors, updateData, budget }) => {
                                             <td style={{ textAlign: 'center' }}>{gift.quantity}</td>
                                             <td>{formatCurrency(gift.pricePerGift || 0)}</td>
                                             <td><strong>{formatCurrency(gift.totalCost || 0)}</strong></td>
+                                            <td>
+                                                {gift.paymentResponsibility ? (
+                                                    <span className={`badge ${gift.paymentResponsibility === 'bride' ? 'badge-info' : gift.paymentResponsibility === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                        {gift.paymentResponsibility === 'bride' ? '👰 Bride' : gift.paymentResponsibility === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                    </span>
+                                                ) : '-'}
+                                            </td>
+                                            <td>
+                                                {gift.paidBy && gift.paidBy !== 'pending' ? (
+                                                    <span className={`badge ${gift.paidBy === 'bride' ? 'badge-info' : gift.paidBy === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                        {gift.paidBy === 'bride' ? '👰 Bride' : gift.paidBy === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                    </span>
+                                                ) : <span className="badge badge-error">Pending</span>}
+                                            </td>
                                             <td>
                                                 <span className={`badge ${gift.status === 'purchased' ? 'badge-success' : gift.status === 'ordered' ? 'badge-info' : 'badge-warning'}`}>
                                                     {gift.status}
@@ -314,6 +346,8 @@ const Gifts = ({ giftsAndFavors, updateData, budget }) => {
                                         <th>Quantity</th>
                                         <th>Price/Gift</th>
                                         <th>Total Cost</th>
+                                        <th>Payment Responsibility</th>
+                                        <th>Paid By</th>
                                         <th>Status</th>
                                         <th>Purchased From</th>
                                         <th>Notes</th>
@@ -329,6 +363,20 @@ const Gifts = ({ giftsAndFavors, updateData, budget }) => {
                                             <td style={{ textAlign: 'center' }}>{gift.quantity}</td>
                                             <td>{formatCurrency(gift.pricePerGift || 0)}</td>
                                             <td><strong>{formatCurrency(gift.totalCost || 0)}</strong></td>
+                                            <td>
+                                                {gift.paymentResponsibility ? (
+                                                    <span className={`badge ${gift.paymentResponsibility === 'bride' ? 'badge-info' : gift.paymentResponsibility === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                        {gift.paymentResponsibility === 'bride' ? '👰 Bride' : gift.paymentResponsibility === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                    </span>
+                                                ) : '-'}
+                                            </td>
+                                            <td>
+                                                {gift.paidBy && gift.paidBy !== 'pending' ? (
+                                                    <span className={`badge ${gift.paidBy === 'bride' ? 'badge-info' : gift.paidBy === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                        {gift.paidBy === 'bride' ? '👰 Bride' : gift.paidBy === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                    </span>
+                                                ) : <span className="badge badge-error">Pending</span>}
+                                            </td>
                                             <td>
                                                 <span className={`badge ${gift.status === 'purchased' ? 'badge-success' : gift.status === 'ordered' ? 'badge-info' : 'badge-warning'}`}>
                                                     {gift.status}
@@ -529,6 +577,24 @@ const GiftModal = ({ item, onSave, onClose, budget }) => {
                             {budgetCategories.map(cat => (
                                 <option key={cat.value} value={cat.value}>{cat.label}</option>
                             ))}
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Payment Responsibility</label>
+                        <select className="form-select" value={formData.paymentResponsibility || ''} onChange={e => setFormData({ ...formData, paymentResponsibility: e.target.value })}>
+                            <option value="">-- Select --</option>
+                            <option value="bride">👰 Bride Side</option>
+                            <option value="groom">🤵 Groom Side</option>
+                            <option value="split">🤝 Split (Both)</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Paid By</label>
+                        <select className="form-select" value={formData.paidBy || 'pending'} onChange={e => setFormData({ ...formData, paidBy: e.target.value })}>
+                            <option value="pending">Pending</option>
+                            <option value="bride">👰 Bride Side</option>
+                            <option value="groom">🤵 Groom Side</option>
+                            <option value="split">🤝 Split (Both)</option>
                         </select>
                     </div>
                     <div className="form-group">

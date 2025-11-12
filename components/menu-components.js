@@ -200,6 +200,8 @@ const Menus = ({ menus, updateData, budget }) => {
                                                     <th>Item</th>
                                                     <th>Price Per Plate</th>
                                                     <th>Budget Category</th>
+                                                    <th>Payment Responsibility</th>
+                                                    <th>Paid By</th>
                                                     <th>Description</th>
                                                     <th>Expected Total</th>
                                                     <th>Actual Total</th>
@@ -215,6 +217,20 @@ const Menus = ({ menus, updateData, budget }) => {
                                                             {item.budgetCategory ? (
                                                                 <span className="badge badge-info">{item.budgetCategory.replace(/_/g, ' ')}</span>
                                                             ) : '-'}
+                                                        </td>
+                                                        <td>
+                                                            {item.paymentResponsibility ? (
+                                                                <span className={`badge ${item.paymentResponsibility === 'bride' ? 'badge-info' : item.paymentResponsibility === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                                    {item.paymentResponsibility === 'bride' ? '👰 Bride' : item.paymentResponsibility === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                                </span>
+                                                            ) : '-'}
+                                                        </td>
+                                                        <td>
+                                                            {item.paidBy && item.paidBy !== 'pending' ? (
+                                                                <span className={`badge ${item.paidBy === 'bride' ? 'badge-info' : item.paidBy === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                                    {item.paidBy === 'bride' ? '👰 Bride' : item.paidBy === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                                </span>
+                                                            ) : <span className="badge badge-error">Pending</span>}
                                                         </td>
                                                         <td style={{ fontSize: '12px', maxWidth: '200px' }}>{item.description || '-'}</td>
                                                         <td>{formatCurrency((item.pricePerPlate || 0) * (event.expectedGuests || 0))}</td>
@@ -335,6 +351,24 @@ const MenuItemModal = ({ item, onSave, onClose, budget }) => {
                             {budgetCategories.map(cat => (
                                 <option key={cat.value} value={cat.value}>{cat.label}</option>
                             ))}
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Payment Responsibility</label>
+                        <select className="form-select" value={formData.paymentResponsibility || ''} onChange={e => setFormData({ ...formData, paymentResponsibility: e.target.value })}>
+                            <option value="">-- Select --</option>
+                            <option value="bride">👰 Bride Side</option>
+                            <option value="groom">🤵 Groom Side</option>
+                            <option value="split">🤝 Split (Both)</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Paid By</label>
+                        <select className="form-select" value={formData.paidBy || 'pending'} onChange={e => setFormData({ ...formData, paidBy: e.target.value })}>
+                            <option value="pending">Pending</option>
+                            <option value="bride">👰 Bride Side</option>
+                            <option value="groom">🤵 Groom Side</option>
+                            <option value="split">🤝 Split (Both)</option>
                         </select>
                     </div>
                     <div className="form-group">

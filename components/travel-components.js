@@ -129,6 +129,8 @@ const { useState, useEffect, useMemo } = React;
                                             <th>Seats</th>
                                             <th>Total Price</th>
                                             <th>Budget Category</th>
+                                            <th>Payment Responsibility</th>
+                                            <th>Paid By</th>
                                             <th>Kilometers</th>
                                             <th>Route</th>
                                             <th>Driver</th>
@@ -154,6 +156,20 @@ const { useState, useEffect, useMemo } = React;
                                                     {trans.budgetCategory ? (
                                                         <span className="badge badge-info">{trans.budgetCategory.replace(/_/g, ' ')}</span>
                                                     ) : '-'}
+                                                </td>
+                                                <td>
+                                                    {trans.paymentResponsibility ? (
+                                                        <span className={`badge ${trans.paymentResponsibility === 'bride' ? 'badge-info' : trans.paymentResponsibility === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                            {trans.paymentResponsibility === 'bride' ? '👰 Bride' : trans.paymentResponsibility === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                        </span>
+                                                    ) : '-'}
+                                                </td>
+                                                <td>
+                                                    {trans.paidBy && trans.paidBy !== 'pending' ? (
+                                                        <span className={`badge ${trans.paidBy === 'bride' ? 'badge-info' : trans.paidBy === 'groom' ? 'badge-success' : 'badge-warning'}`}>
+                                                            {trans.paidBy === 'bride' ? '👰 Bride' : trans.paidBy === 'groom' ? '🤵 Groom' : '🤝 Split'}
+                                                        </span>
+                                                    ) : <span className="badge badge-error">Pending</span>}
                                                 </td>
                                                 <td style={{ textAlign: 'center' }}>{trans.kilometers || 0} km</td>
                                                 <td style={{ fontSize: '12px', maxWidth: '150px' }}>{trans.route || '-'}</td>
@@ -294,6 +310,24 @@ const { useState, useEffect, useMemo } = React;
                                     {budgetCategories.map(cat => (
                                         <option key={cat.value} value={cat.value}>{cat.label}</option>
                                     ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Payment Responsibility</label>
+                                <select className="form-select" value={formData.paymentResponsibility || ''} onChange={e => setFormData({ ...formData, paymentResponsibility: e.target.value })}>
+                                    <option value="">-- Select --</option>
+                                    <option value="bride">👰 Bride Side</option>
+                                    <option value="groom">🤵 Groom Side</option>
+                                    <option value="split">🤝 Split (Both)</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Paid By</label>
+                                <select className="form-select" value={formData.paidBy || 'pending'} onChange={e => setFormData({ ...formData, paidBy: e.target.value })}>
+                                    <option value="pending">Pending</option>
+                                    <option value="bride">👰 Bride Side</option>
+                                    <option value="groom">🤵 Groom Side</option>
+                                    <option value="split">🤝 Split (Both)</option>
                                 </select>
                             </div>
                             <div className="form-group">

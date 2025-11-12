@@ -271,6 +271,68 @@ const BudgetHealthScorecard = ({ data }) => {
         const totalActualSpent = totalSpent + totalLinkedActual;
         const utilization = totalBudget > 0 ? (totalActualSpent / totalBudget * 100).toFixed(1) : 0;
         
+        // Calculate bride/groom side spending
+        let brideActual = 0;
+        let groomActual = 0;
+        
+        data.vendors?.forEach(v => {
+            if (v.budgetCategory) {
+                const cost = v.finalCost || 0;
+                if (v.paymentResponsibility === 'bride') brideActual += cost;
+                else if (v.paymentResponsibility === 'groom') groomActual += cost;
+                else if (v.paymentResponsibility === 'split') { brideActual += cost / 2; groomActual += cost / 2; }
+            }
+        });
+        
+        data.menus?.forEach(m => {
+            m.items?.forEach(item => {
+                const cost = (item.pricePerPlate || 0) * (m.attendedGuests || 0);
+                if (item.paymentResponsibility === 'bride') brideActual += cost;
+                else if (item.paymentResponsibility === 'groom') groomActual += cost;
+                else if (item.paymentResponsibility === 'split') { brideActual += cost / 2; groomActual += cost / 2; }
+            });
+        });
+        
+        ['familyGifts', 'returnGifts', 'specialGifts'].forEach(giftType => {
+            data.giftsAndFavors?.[giftType]?.forEach(g => {
+                if (g.budgetCategory) {
+                    const cost = g.totalCost || 0;
+                    if (g.paymentResponsibility === 'bride') brideActual += cost;
+                    else if (g.paymentResponsibility === 'groom') groomActual += cost;
+                    else if (g.paymentResponsibility === 'split') { brideActual += cost / 2; groomActual += cost / 2; }
+                }
+            });
+        });
+        
+        ['bride', 'groom', 'family'].forEach(shopType => {
+            data.shopping?.[shopType]?.forEach(list => {
+                list.items?.forEach(item => {
+                    if (item.budgetCategory) {
+                        const cost = item.budget || 0;
+                        if (item.paymentResponsibility === 'bride') brideActual += cost;
+                        else if (item.paymentResponsibility === 'groom') groomActual += cost;
+                        else if (item.paymentResponsibility === 'split') { brideActual += cost / 2; groomActual += cost / 2; }
+                    }
+                });
+            });
+        });
+        
+        data.travel?.transport?.forEach(t => {
+            if (t.budgetCategory) {
+                const cost = t.totalPrice || 0;
+                if (t.paymentResponsibility === 'bride') brideActual += cost;
+                else if (t.paymentResponsibility === 'groom') groomActual += cost;
+                else if (t.paymentResponsibility === 'split') { brideActual += cost / 2; groomActual += cost / 2; }
+            }
+        });
+        
+        const brideBudget = data.weddingInfo?.brideBudget || 0;
+        const groomBudget = data.weddingInfo?.groomBudget || 0;
+        const brideRemaining = brideBudget - brideActual;
+        const groomRemaining = groomBudget - groomActual;
+        const brideUtil = brideBudget > 0 ? (brideActual / brideBudget * 100).toFixed(1) : 0;
+        const groomUtil = groomBudget > 0 ? (groomActual / groomBudget * 100).toFixed(1) : 0;
+        
         const categories = budget.map(cat => ({
             name: cat.category,
             planned: cat.planned || 0,
@@ -288,7 +350,8 @@ const BudgetHealthScorecard = ({ data }) => {
         
         const costPerGuest = totalActualSpent / guestCount;
         
-        return { totalBudget, totalSpent, totalExpected, totalLinkedActual, totalActualSpent, utilization, categories, costPerGuest };
+        return { totalBudget, totalSpent, totalExpected, totalLinkedActual, totalActualSpent, utilization, categories, costPerGuest,
+                 brideActual, groomActual, brideBudget, groomBudget, brideRemaining, groomRemaining, brideUtil, groomUtil };
     }, [data]);
     
     return (
@@ -316,14 +379,22 @@ const BudgetHealthScorecard = ({ data }) => {
                 </div>
             </div>
             
-            <div style={{ marginBottom: '12px', padding: '10px', background: 'var(--color-bg-secondary)', borderRadius: '8px', fontSize: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>Manual Actual:</span>
-                    <strong>{formatCurrency(stats.totalSpent)}</strong>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ padding: '12px', background: 'rgba(74, 144, 226, 0.1)', borderRadius: '8px', border: '2px solid var(--color-info)' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--color-info)' }}>👰 Bride Side</h4>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{formatCurrency(stats.brideActual)}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>of {formatCurrency(stats.brideBudget)} ({stats.brideUtil}%)</div>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: stats.brideRemaining >= 0 ? 'var(--color-success)' : 'var(--color-error)', marginTop: '4px' }}>
+                        {formatCurrency(stats.brideRemaining)} remaining
+                    </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Linked Actual:</span>
-                    <strong>{formatCurrency(stats.totalLinkedActual)}</strong>
+                <div style={{ padding: '12px', background: 'rgba(39, 174, 96, 0.1)', borderRadius: '8px', border: '2px solid var(--color-success)' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--color-success)' }}>🤵 Groom Side</h4>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{formatCurrency(stats.groomActual)}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>of {formatCurrency(stats.groomBudget)} ({stats.groomUtil}%)</div>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: stats.groomRemaining >= 0 ? 'var(--color-success)' : 'var(--color-error)', marginTop: '4px' }}>
+                        {formatCurrency(stats.groomRemaining)} remaining
+                    </div>
                 </div>
             </div>
             

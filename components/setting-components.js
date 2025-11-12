@@ -118,6 +118,8 @@ const { useState, useEffect, useMemo } = React;
                                         <p><strong>Wedding Date:</strong> {formatDate(weddingInfo.weddingDate)}</p>
                                         <p><strong>Location:</strong> {weddingInfo.location}</p>
                                         <p><strong>Total Budget:</strong> {formatCurrency(weddingInfo.totalBudget)}</p>
+                                        <p><strong>👰 Bride Budget:</strong> {formatCurrency(weddingInfo.brideBudget || 0)}</p>
+                                        <p><strong>🤵 Groom Budget:</strong> {formatCurrency(weddingInfo.groomBudget || 0)}</p>
                                     </div>
                                 </div>
                                 <button className="btn btn-primary" onClick={() => setEditMode(true)}>Edit Information</button>
@@ -199,6 +201,36 @@ const { useState, useEffect, useMemo } = React;
                                             }}
                                         />
                                         {formErrors.totalBudget && <div className="error-message">{formErrors.totalBudget}</div>}
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">👰 Bride Side Budget (₹)</label>
+                                        <input 
+                                            type="number"
+                                            className={`form-input ${formErrors.brideBudget ? 'error' : ''}`}
+                                            value={formData.brideBudget || 0}
+                                            onChange={e => {
+                                                setFormData({ ...formData, brideBudget: parseFloat(e.target.value) || 0 });
+                                                if (formErrors.brideBudget) {
+                                                    setFormErrors({ ...formErrors, brideBudget: null });
+                                                }
+                                            }}
+                                        />
+                                        {formErrors.brideBudget && <div className="error-message">{formErrors.brideBudget}</div>}
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">🤵 Groom Side Budget (₹)</label>
+                                        <input 
+                                            type="number"
+                                            className={`form-input ${formErrors.groomBudget ? 'error' : ''}`}
+                                            value={formData.groomBudget || 0}
+                                            onChange={e => {
+                                                setFormData({ ...formData, groomBudget: parseFloat(e.target.value) || 0 });
+                                                if (formErrors.groomBudget) {
+                                                    setFormErrors({ ...formErrors, groomBudget: null });
+                                                }
+                                            }}
+                                        />
+                                        {formErrors.groomBudget && <div className="error-message">{formErrors.groomBudget}</div>}
                                     </div>
                                 </div>
                                 <div style={{ marginTop: '16px' }}>

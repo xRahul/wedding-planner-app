@@ -6,7 +6,9 @@ const DEFAULT_DATA = {
         groomName: "",
         weddingDate: "",
         location: "",
-        totalBudget: 0
+        totalBudget: 0,
+        brideBudget: 0,
+        groomBudget: 0
     },
     savedGuestCategories: ['family', 'friends', 'relatives', 'family_friends', 'colleagues', 'vendors'],
     savedGuestRelations: ['maternal_uncle', 'maternal_aunt', 'paternal_uncle', 'paternal_aunt', 'father_sister', 'mother_sister', 'cousin', 'family_friend', 'college_friend', 'work_colleague', 'neighbor'],
@@ -118,6 +120,8 @@ const validateWeddingInfo = (info) => {
     const errors = {};
     if (!info.brideName?.trim()) errors.brideName = 'Bride name is required';
     if (!info.groomName?.trim()) errors.groomName = 'Groom name is required';
+    if (info.brideBudget && !window.securityUtils?.isValidNumber(info.brideBudget)) errors.brideBudget = 'Invalid bride budget';
+    if (info.groomBudget && !window.securityUtils?.isValidNumber(info.groomBudget)) errors.groomBudget = 'Invalid groom budget';
     return Object.keys(errors).length ? errors : null;
 };
 
@@ -172,6 +176,8 @@ const validateVendor = (vendor) => {
         if (vendor.estimatedCost && !window.securityUtils?.isValidNumber(vendor.estimatedCost)) errors.estimatedCost = 'Invalid cost';
         if (vendor.finalCost && !window.securityUtils?.isValidNumber(vendor.finalCost)) errors.finalCost = 'Invalid cost';
         if (vendor.advancePaid && !window.securityUtils?.isValidNumber(vendor.advancePaid)) errors.advancePaid = 'Invalid amount';
+        if (vendor.paymentResponsibility && !['bride', 'groom', 'split'].includes(vendor.paymentResponsibility)) errors.paymentResponsibility = 'Invalid payment responsibility';
+        if (vendor.paidBy && !['bride', 'groom', 'split', 'pending'].includes(vendor.paidBy)) errors.paidBy = 'Invalid paid by value';
         return Object.keys(errors).length ? errors : null;
     } catch (error) {
         console.error('Validation error:', error);
