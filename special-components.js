@@ -1547,14 +1547,14 @@ const { useState, useEffect, useMemo } = React;
                     <div className="card">
                         <h2 className="card-title">Data Management</h2>
                         <p style={{ marginBottom: '16px', color: 'var(--color-text-secondary)' }}>
-                            Export your wedding data as a JSON backup file, or import previously saved data.
+                            Export all your wedding data as a JSON backup file, or import previously saved data.
                         </p>
-                        <div>
-                            <button className="btn btn-success" onClick={handleExport}>
-                                📥 Export Data (Backup)
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <button className="btn btn-success" onClick={handleExport} style={{ flex: '1', minWidth: '200px' }}>
+                                📥 Export All Data
                             </button>
-                            <label className="btn btn-primary" style={{ cursor: 'pointer' }}>
-                                📤 Import Data
+                            <label className="btn btn-primary" style={{ cursor: 'pointer', flex: '1', minWidth: '200px' }}>
+                                📤 Import All Data
                                 <input 
                                     type="file" 
                                     accept=".json" 
@@ -1562,6 +1562,8 @@ const { useState, useEffect, useMemo } = React;
                                     style={{ display: 'none' }}
                                 />
                             </label>
+                        </div>
+                        <div style={{ marginTop: '16px' }}>
                             <button className="btn btn-danger" onClick={handleReset}>
                                 🔄 Reset to Default Data
                             </button>
