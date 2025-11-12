@@ -16,11 +16,15 @@ const Guests = ({ guests, updateData, data }) => {
     };
 
     const stats = useMemo(() => {
+        const totalFamilies = guests.filter(g => g.type === 'family').length;
+        const totalSingles = guests.filter(g => g.type === 'single').length;
         const totalIndividuals = guests.reduce((sum, g) => {
             if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
             return sum + 1;
         }, 0);
         const confirmed = guests.filter(g => g.rsvpStatus === 'yes').length;
+        const confirmedFamilies = guests.filter(g => g.type === 'family' && g.rsvpStatus === 'yes').length;
+        const confirmedSingles = guests.filter(g => g.type === 'single' && g.rsvpStatus === 'yes').length;
         const confirmedIndividuals = guests.reduce((sum, g) => {
             if (g.rsvpStatus === 'yes') {
                 if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
@@ -84,8 +88,12 @@ const Guests = ({ guests, updateData, data }) => {
         
         return {
             total: guests.length,
+            totalFamilies,
+            totalSingles,
             totalIndividuals,
             confirmed,
+            confirmedFamilies,
+            confirmedSingles,
             confirmedIndividuals,
             pending,
             declined,
@@ -115,16 +123,16 @@ const Guests = ({ guests, updateData, data }) => {
                 <div className="stats-grid">
                     <div className="stat-card">
                         <div className="stat-value">{stats.totalIndividuals}</div>
-                        <div className="stat-label">Total Individuals</div>
+                        <div className="stat-label">Total People</div>
                         <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                            {stats.total} entries
+                            👨👩👧👦 {stats.totalFamilies} families • 👤 {stats.totalSingles} singles
                         </div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-value" style={{ color: 'var(--color-success)' }}>{stats.confirmedIndividuals}</div>
-                        <div className="stat-label">Confirmed Attending</div>
+                        <div className="stat-label">Confirmed People</div>
                         <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                            {stats.confirmed} entries confirmed
+                            👨👩👧👦 {stats.confirmedFamilies} families • 👤 {stats.confirmedSingles} singles
                         </div>
                     </div>
                     <div className="stat-card">
@@ -200,7 +208,7 @@ const Guests = ({ guests, updateData, data }) => {
                 )}
             </Card>
 
-            <Card title={`Guest List (${stats.total} entries, ${stats.totalIndividuals} individuals)`}>
+            <Card title={`Guest List (${stats.totalFamilies} families, ${stats.totalSingles} singles, ${stats.totalIndividuals} people)`}>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
                     {['all', 'family', 'friends', 'yes', 'pending'].map(f => (
                         <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f)}>

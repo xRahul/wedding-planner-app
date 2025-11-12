@@ -126,9 +126,9 @@ const DashboardOld = ({ data }) => {
                 </div>
                 <div className="stat-card">
                     <div className="stat-value">{stats.confirmedIndividuals}/{stats.totalIndividuals}</div>
-                    <div className="stat-label">Confirmed Guests</div>
+                    <div className="stat-label">Confirmed People</div>
                     <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                        {stats.confirmedGuests}/{stats.totalGuests} entries • {Math.round(stats.confirmedIndividuals/stats.totalIndividuals*100)}% confirmed
+                        {stats.confirmedGuests} entries ({stats.confirmedIndividuals} people) • {Math.round(stats.confirmedIndividuals/stats.totalIndividuals*100)}% confirmed
                     </div>
                 </div>
                 <div className="stat-card" style={{ background: stats.budgetPercentage > 90 ? 'rgba(220, 53, 69, 0.1)' : 'var(--color-bg-secondary)' }}>

@@ -2,9 +2,18 @@ const Tabs = ({ activeTab, setActiveTab, data = {} }) => {
     const getTabStats = (tabId) => {
         switch (tabId) {
             case 'guests':
-                const totalGuests = data.guests?.length || 0;
-                const confirmedGuests = data.guests?.filter(g => g.rsvpStatus === 'yes').length || 0;
-                return totalGuests > 0 ? `${confirmedGuests}/${totalGuests}` : null;
+                const totalPeople = data.guests?.reduce((sum, g) => {
+                    if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
+                    return sum + 1;
+                }, 0) || 0;
+                const confirmedPeople = data.guests?.reduce((sum, g) => {
+                    if (g.rsvpStatus === 'yes') {
+                        if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
+                        return sum + 1;
+                    }
+                    return sum;
+                }, 0) || 0;
+                return totalPeople > 0 ? `${confirmedPeople}/${totalPeople}` : null;
             case 'vendors':
                 const totalVendors = data.vendors?.length || 0;
                 const confirmedVendors = data.vendors?.filter(v => ['confirmed', 'booked'].includes(v.status)).length || 0;
