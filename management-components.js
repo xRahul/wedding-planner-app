@@ -1069,9 +1069,9 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
             const [showAddModal, setShowAddModal] = useState(false);
             const [newCategoryName, setNewCategoryName] = useState('');
 
-            const handleUpdate = (category, field, value) => {
+            const handleUpdate = (category, updates) => {
                 const updatedBudget = budget.map(cat => 
-                    cat.category === category ? { ...cat, [field]: parseFloat(value) || 0 } : cat
+                    cat.category === category ? { ...cat, ...updates } : cat
                 );
                 updateData('budget', updatedBudget);
                 setEditingCategory(null);
@@ -1271,10 +1271,7 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
                             <button className="btn btn-outline" onClick={onClose}>Cancel</button>
                             <button 
                                 className="btn btn-primary" 
-                                onClick={() => {
-                                    onSave(category.category, 'planned', planned);
-                                    onSave(category.category, 'actual', actual);
-                                }}
+                                onClick={() => onSave(category.category, { planned: parseFloat(planned) || 0, actual: parseFloat(actual) || 0 })}
                             >
                                 Save Changes
                             </button>
