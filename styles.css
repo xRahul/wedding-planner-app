@@ -1325,3 +1325,43 @@ input[type="radio"] {
     white-space: nowrap !important;
     border: 0 !important;
 }
+
+/* Notification Banner */
+.notification-banner {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+    animation: slideDown 0.3s ease, fadeOut 0.3s ease 2.7s;
+    font-weight: 500;
+    min-width: 300px;
+    text-align: center;
+}
+
+.notification-success {
+    background: var(--color-success);
+    color: white;
+}
+
+.notification-info {
+    background: #2196F3;
+    color: white;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+    .notification-banner {
+        top: 60px;
+        min-width: 250px;
+        padding: 10px 16px;
+        font-size: var(--font-size-sm);
+    }
+}

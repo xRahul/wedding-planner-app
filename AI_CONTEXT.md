@@ -35,6 +35,7 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
 **app.js**
 - Main `WeddingPlannerApp` component
 - Manages global state (`data` object)
+- Uses `useNotification` hook for notifications
 - Handles data loading/saving
 - Routing logic (tab-based navigation)
 - Must load LAST (after all components)
@@ -56,6 +57,7 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
 - CSS variables for theming
 - Responsive grid layouts
 - Component-specific styles
+- Notification banner styles
 - No CSS-in-JS
 
 ### Component Files
@@ -66,6 +68,18 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
 - North Indian wedding constants
 - Components: `Modal`, `FormField`, `Badge`, `Card`, `ActionButtons`, `SelectOrAddField`, etc.
 - Hooks: `useCRUD`, `useFilter`, `useWeddingProgress`
+
+**components/error-boundary.js**
+- `ErrorBoundary` component
+- Catches React errors and displays fallback UI
+- Provides recovery option
+
+**components/notification-component.js**
+- `Notification` component - Auto-dismissing notification banner
+- `useNotification` hook - Manages notification state with `showNotification` and `closeNotification`
+- Reusable across all components
+- Auto-dismisses after 3 seconds
+- Uses `useRef` to prevent double rendering
 
 **components/header-component.js**
 - `Header` component
@@ -79,18 +93,36 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
 - Shows stats badges on tabs
 - Alert indicators for urgent items
 
+**components/analytics-dashboard-components.js**
+- Advanced analytics components
+- `TaskCompletionAnalytics`, `GuestAnalytics`, `BudgetHealthScorecard`
+- `VendorPerformanceSummary`, `EventReadinessTracker`
+- `TimelinePressureIndex`, `SmartRecommendations`, `WeeklyProgressReport`
+
 **components/dashboard-component.js**
 - `Dashboard` component
 - Real-time statistics and analytics
 - Alert system for critical items
 - Progress tracking for all features
 - Smart insights and recommendations
+- Shows Veg/Jain dietary counts (no non-veg)
 
 **Feature Components** (guest, vendor, budget, task, menu, ritual, gift, shopping, travel, setting)
 - Each manages one feature area
 - Follows consistent pattern: list view + modal for add/edit
 - Uses `useCRUD` hook for common operations
 - Props: `{data, updateData}` or specific data slice
+- Settings component receives `showNotification` prop
+
+**utils/security.js**
+- Security utilities for input sanitization
+- Data encryption functions (AES-GCM 256-bit)
+- Validation functions for email, phone, names
+
+**styles/accessibility.css**
+- Accessibility-specific styles
+- Focus indicators, skip links (fixed positioning), screen reader support
+- Reduced motion support
 
 ## 🔄 Data Flow
 
@@ -100,7 +132,7 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
   weddingInfo: { brideName, groomName, weddingDate, location, totalBudget },
   savedGuestCategories: string[],
   savedGuestRelations: string[],
-  savedDietaryPreferences: string[],
+  savedDietaryPreferences: string[], // Default: ['veg', 'jain']
   savedFamilyRelations: string[],
   customCeremonies: string[],
   customGiftEvents: string[],
@@ -124,6 +156,7 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
 2. `updateData(key, value)` function passed to all components
 3. Components call `updateData('guests', newGuestsArray)` to update
 4. App.js triggers save on every data change
+5. Notification state managed via `useNotification` hook
 
 ### CRUD Pattern (via useCRUD hook)
 ```javascript
@@ -134,6 +167,17 @@ const { showModal, editing, handleAdd, handleEdit, handleSave, handleDelete, clo
 // handleEdit - Opens modal with existing item
 // handleSave - Validates, updates array, calls updateData
 // handleDelete - Confirms, removes from array, calls updateData
+```
+
+### Notification Pattern (via useNotification hook)
+```javascript
+const { notification, showNotification, closeNotification } = useNotification();
+
+// Show notification
+showNotification('Data imported successfully!', 'success'); // or 'info'
+
+// Render notification
+{notification && <Notification message={notification.message} type={notification.type} onClose={closeNotification} />}
 ```
 
 ## 🎨 Component Patterns
@@ -221,19 +265,22 @@ const DEFAULT_DATA = {
 {activeTab === 'myfeature' && <MyFeature myData={data.myData} updateData={updateData} />}
 ```
 
-### Modifying Existing Feature
+### Using Notifications in Components
 
-1. **Find component file** in `components/` directory
-2. **Locate data structure** in `utils.js` DEFAULT_DATA
-3. **Update component** - maintain existing patterns
-4. **Test data flow** - ensure updateData is called correctly
-5. **Check validation** - update validator if needed
+1. **Pass showNotification from app.js**:
+```javascript
+<MyComponent data={data} updateData={updateData} showNotification={showNotification} />
+```
 
-### Adding Shared Component
-
-1. **Add to shared-components-bundle.js**
-2. **Export as global** (no export statement needed, just define)
-3. **Use in any component** (available globally after bundle loads)
+2. **Use in component**:
+```javascript
+const MyComponent = ({ data, updateData, showNotification }) => {
+  const handleSuccess = () => {
+    showNotification('Operation successful!', 'success');
+  };
+  // ...
+};
+```
 
 ## 🎯 Key Features Explained
 
@@ -241,8 +288,10 @@ const DEFAULT_DATA = {
 - **Single vs Family**: Family type has `familyMembers` array
 - **Family Members**: Each has own dietary, room, dates, aadhar status
 - **RSVP**: yes/pending/no status
+- **Dietary Preferences**: Veg and Jain options only (non-veg removed)
 - **Custom Fields**: Categories, relations, dietary preferences are customizable
 - **Stats**: Calculates total individuals (head + family members)
+- **Enhanced Table**: Improved fonts (13-14px), better column ordering (Phone/Room before Notes)
 
 ### Vendor Management
 - **40+ Types**: Pre-defined vendor types for North Indian weddings
@@ -274,14 +323,15 @@ const DEFAULT_DATA = {
 **Problem**: Component uses undefined function/component
 **Solution**: Check index.html - dependencies must load before dependents
 - shared-components-bundle.js MUST load before feature components
+- notification-component.js MUST load before app.js
 - app.js MUST load last
 
-### Service Worker Not Caching (v2.1 Fix)
-**Problem**: PWA doesn't work offline
-**Solution**: Service worker cache updated to v2 with correct file paths
-- Clear browser cache and reinstall PWA
-- Check console for cache errors
-- All component files now properly cached
+### Notification Showing Twice
+**Problem**: Notification stutters or shows multiple times
+**Solution**: Use `useRef` for timer management, empty dependency array in useEffect
+- Prevents multiple timer creation
+- Ensures single notification display
+- Fixed in notification-component.js
 
 ### State Updates Not Saving
 **Problem**: UI updates but data doesn't persist
@@ -289,355 +339,35 @@ const DEFAULT_DATA = {
 - Key must match DEFAULT_DATA structure
 - Value must be complete array/object, not partial
 
-### Modal Not Closing
-**Problem**: Modal stays open after save
-**Solution**: Ensure `closeModal()` is called in handleSave or onSave callback
-
-### Validation Errors
-**Problem**: Can't save item even though fields are filled
-**Solution**: Check validator function - ensure all required fields are validated
-- Validator returns `null` for valid, `{field: 'error'}` for invalid
-
-### Custom Values Not Persisting
-**Problem**: Custom categories/relations disappear on reload
-**Solution**: Ensure custom values are added to saved arrays and updateData is called
-- Example: `updateData('savedGuestCategories', [...existing, newValue])`
-
-## 🔍 Debugging Tips
-
-### Check Data Structure
-```javascript
-// In browser console
-const data = JSON.parse(localStorage.getItem('weddingPlannerData'));
-console.log(data);
-```
-
-### Verify Script Loading
-```javascript
-// In browser console
-console.log(typeof Modal); // Should be 'function'
-console.log(typeof useCRUD); // Should be 'function'
-```
-
-### Check Save Operations
-```javascript
-// In browser console
-window.storageManager.loadData(); // Returns current data
-```
-
-### Monitor State Changes
-- Open React DevTools
-- Watch component re-renders
-- Check props being passed
-
-## 📝 Code Style Guidelines
-
-### Naming Conventions
-- Components: PascalCase (`GuestModal`)
-- Functions: camelCase (`handleSave`)
-- Constants: UPPER_SNAKE_CASE (`DEFAULT_DATA`)
-- CSS classes: kebab-case (`modal-overlay`)
-
-### Component Structure
-1. Imports/hooks at top
-2. State declarations
-3. Computed values (useMemo)
-4. Event handlers
-5. Return JSX
-
-### JSX Patterns
-- Use semantic HTML
-- Inline styles for dynamic values
-- CSS classes for static styles
-- Conditional rendering with `&&` or ternary
-
-### Data Immutability
-- Always create new arrays/objects
-- Use spread operator: `[...array, newItem]`
-- Never mutate props directly
-
-## 🎓 Learning Resources
-
-### Understanding the Codebase
-1. Start with `app.js` - understand data flow
-2. Read `utils.js` - understand data structure
-3. Study `shared-components-bundle.js` - understand patterns
-4. Pick one feature component - see pattern in action
-5. Try modifying a feature - apply pattern
-
-### React Patterns Used
-- Functional components with hooks
-- Props drilling (no Context API)
-- Controlled components (forms)
-- Conditional rendering
-- List rendering with keys
-
-### North Indian Wedding Context
-- Pre-wedding ceremonies (Mehendi, Sangeet, Haldi)
-- Main ceremonies (Baraat, Pheras, Vidai)
-- Family relations (Mama, Chacha, Bua, etc.)
-- Vendor types (Pandit, Band Baja, Dhol, etc.)
-
-## 🚀 Performance Considerations
-
-### Optimization Strategies
-- `useMemo` for expensive calculations
-- Avoid inline function definitions in render
-- Use `defer` for script loading
-- Service Worker for caching
-
-### Data Size Management
-- LocalStorage limit: ~5-10MB
-- Export data regularly for backup
-- All storage operations are async (v2.1)
-- Automatic error handling for quota exceeded
-
-### Rendering Performance
-- React production build via CDN
-- Minimal re-renders (props comparison)
-- Efficient list rendering with keys
-- Division-by-zero guards prevent NaN displays (v2.1)
-- Null checks prevent crashes with incomplete data (v2.1)
-
-## 🔐 Security Implementation
-
-### Security Features
-
-**Input Sanitization** (`/utils/security.js`)
-- `sanitizeInput()` - Escapes HTML to prevent XSS
-- `sanitizeObject()` - Recursively sanitizes objects
-- Integrated into storage.js saveData()
-
-**Data Encryption** (`/utils/security.js`)
-- Web Crypto API (AES-GCM 256-bit)
-- `encryptGuestData()` / `decryptGuestData()`
-- Encrypts: phone, email, Aadhar
-- PBKDF2 key derivation (100,000 iterations)
-
-**Content Security Policy** (`index.html`)
-```
-default-src 'self';
-script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com;
-style-src 'self' 'unsafe-inline';
-img-src 'self' data:;
-connect-src 'self';
-```
-
-**Validation Functions** (`/utils/security.js`)
-- `isValidPhone()` - Phone format validation (10+ digits)
-- `isValidEmail()` - RFC 5322 email validation
-- `isValidName()` - Alphanumeric + safe chars (max 100)
-- `isValidNumber()` - Strict numeric validation
-
-**Enhanced Validators** (`/utils.js` - v2.1)
-- All validators wrapped in try-catch for error handling
-- Length validation enforced (100 char max for names)
-- Numeric validation for all monetary fields
-- Date range validation for travel items
-- Null/undefined checks before operations
-
-**Error Boundary** (`/components/error-boundary.js`)
-- Catches React errors
-- User-friendly error display
-- Recovery option
-
-### Usage Examples
-```javascript
-// Sanitize input
-const safe = window.securityUtils.sanitizeInput(userInput);
-
-// Validate
-if (!window.securityUtils.isValidEmail(email)) {
-  setError('Invalid email');
-}
-
-// Encrypt sensitive data
-const encrypted = await window.securityUtils.encryptGuestData(guest);
-```
-
-### Data Privacy
-- All data stored locally in browser
-- No external API calls
-- No tracking or analytics
-- User controls all data
-
-
-
-## 📦 Deployment
-
-### Static Hosting
-- Any static file server works
-- No server-side processing needed
-- HTTPS recommended for PWA
-
-### PWA Requirements
-- HTTPS or localhost
-- manifest.json accessible
-- Service worker registered
-- Icons in correct sizes
-
-### Environment Setup
-- Copy `.env.example` to `env.js`
-- Update with database credentials (optional)
-- Serve files from root directory
-
-## 🎯 Future Enhancement Ideas
-
-### Potential Features
-- Guest seating arrangements
-- Invitation tracking
-- Photo gallery
-- Expense splitting
-- Vendor reviews
-- Timeline reminders
-- WhatsApp integration
-- PDF export for printing
-
-### Technical Improvements
-- TypeScript for type safety
-- Build system for optimization
-- State management library
-- API backend
-- Real-time collaboration
-- Mobile app (React Native)
-
-## ♿ Accessibility Implementation
-
-### Features
-
-**Keyboard Navigation** (`/styles/accessibility.css`)
-- Visible focus indicators (2px solid #4F46E5)
-- Applied to all interactive elements
-- No outline for mouse users (`:focus:not(:focus-visible)`)
-
-**Skip Link** (`index.html`, `/styles/accessibility.css`)
-- "Skip to main content" for keyboard users
-- Hidden by default, visible on focus
-- Jumps to `#main-content`
-
-**ARIA Labels** (`app.js`)
-- `role="alert"` on error messages
-- `aria-label` on icon buttons
-- Semantic `<main>` landmark
-
-**Screen Reader Support** (`/styles/accessibility.css`)
-- `.sr-only` class for screen reader only content
-- ARIA live regions for alerts
-- Semantic HTML structure
-
-**Reduced Motion** (`/styles/accessibility.css`)
-```css
-@media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
-}
-```
-
-**Touch Targets** (`/styles/accessibility.css`)
-- Minimum 44x44px for buttons/links
-- Adequate spacing between elements
-
-### Testing
-- **Keyboard**: Tab through all elements, verify focus visible
-- **Screen Reader**: Test with NVDA/VoiceOver
-- **Lighthouse**: Target 90+ accessibility score
-- **axe DevTools**: 0 violations target
-
-## 🔧 Testing & Debugging
-
-### Security Testing
-```javascript
-// Test sanitization
-const malicious = '<script>alert("test")</script>';
-const safe = window.securityUtils.sanitizeInput(malicious);
-console.log(safe); // &lt;script&gt;alert("test")&lt;/script&gt;
-
-// Test encryption
-const data = { phone: '9876543210' };
-window.securityUtils.encryptGuestData(data).then(encrypted => {
-  console.log('Encrypted:', encrypted);
-  return window.securityUtils.decryptGuestData(encrypted);
-}).then(decrypted => {
-  console.log('Decrypted:', decrypted);
-});
-
-// Test validation
-console.log(window.securityUtils.isValidEmail('test@example.com')); // true
-```
-
-### Accessibility Testing
-```javascript
-// Check focus
-document.activeElement; // Currently focused element
-
-// Check ARIA
-element.getAttribute('aria-label');
-element.getAttribute('role');
-
-// Monitor focus changes
-document.addEventListener('focusin', (e) => {
-  console.log('Focused:', e.target);
-});
-```
-
-### Manual Testing
-- **Keyboard**: Unplug mouse, Tab through interface
-- **Screen Reader**: Enable NVDA/VoiceOver, navigate page
-- **Lighthouse**: Run audit in DevTools
-- **axe DevTools**: Install extension, scan page
-
-## 📞 Getting Help
-
-### When Asking for Help
-1. Specify which component/file
-2. Describe expected vs actual behavior
-3. Share relevant code snippet
-4. Mention any console errors
-5. Describe what you've tried
-
-### Common Questions
-**Q: How do I add a new field to guests?**
-A: Update DEFAULT_DATA in utils.js, add to GuestModal form, update table display
-
-**Q: How do I use security utilities?**
-A: Access via `window.securityUtils` - sanitize inputs, validate data, encrypt sensitive fields
-
-**Q: How do I test accessibility?**
-A: Use keyboard only (Tab navigation), test with screen reader, run Lighthouse audit
-
-**Q: How do I export data programmatically?**
-A: Use `window.storageManager.loadData()` to get data object
+### Skip Link Visible
+**Problem**: Skip link partially visible at top
+**Solution**: Use `top: -100px` and `transform: translateY(-100%)` in accessibility.css
+- Completely hides link off-screen
+- Shows on focus for keyboard users
 
 ## 📚 Version History
 
+### v2.2.0 (2024) - UX & Dietary Update
+- Simplified dietary preferences to Veg and Jain only
+- Added reusable notification system with auto-dismiss
+- Improved guest table fonts and column ordering
+- Fixed skip link positioning for accessibility
+- Enhanced notification component with useRef for stability
+
 ### v2.1.0 (2024) - Stability & Validation Update
-- Fixed service worker cache URLs (v1→v2) for proper offline functionality
-- Enhanced all validators with comprehensive error handling and try-catch blocks
+- Fixed service worker cache URLs for proper offline functionality
+- Enhanced all validators with comprehensive error handling
 - Added division-by-zero guards in dashboard calculations
-- Improved async storage operations with proper Promise handling
-- Better error messages with bullet-point formatting
-- Added length validation (max 100 chars) for text fields
-- Added numeric validation for all monetary fields using security utils
-- Fixed guest filter logic bug
-- Added null/undefined checks throughout codebase
-- Added date range validation for travel items
+- Improved async storage operations
 
 ### v2.0.0 (2024) - Security & Accessibility Update
-- Added input sanitization (XSS prevention)
-- Added data encryption (AES-GCM 256-bit)
+- Added input sanitization and data encryption
 - Added Content Security Policy
-- Added enhanced validation
-- Added Error Boundary component
-- Added keyboard navigation support
-- Added screen reader compatibility
+- Added keyboard navigation and screen reader support
 - Added WCAG 2.1 AA compliance
-- Added comprehensive JSDoc comments
-- Removed Postgres/Neon.tech integration
 
 ### v1.0.0 - Initial Release
 - Core wedding planning features
-- Guest, vendor, budget, task management
-- Rituals, menu, gifts, shopping, travel
-- Dashboard with analytics
 - PWA with offline support
 - LocalStorage persistence
 

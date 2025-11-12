@@ -2,7 +2,7 @@ const { useState, useEffect, useMemo } = React;
 
         // ==================== SETTINGS COMPONENT ====================
 
-        const Settings = ({ weddingInfo, updateData, allData, setData }) => {
+        const Settings = ({ weddingInfo, updateData, allData, setData, showNotification }) => {
             const [editMode, setEditMode] = useState(false);
             const [formData, setFormData] = useState(weddingInfo);
 
@@ -75,7 +75,7 @@ const { useState, useEffect, useMemo } = React;
                         await saveData(importedData);
                         setData(importedData);
                         setFormData(importedData.weddingInfo);
-                        alert('Data imported successfully!');
+                        showNotification('Data imported successfully!', 'success');
                     } catch (error) {
                         if (error instanceof SyntaxError) {
                             alert('Invalid JSON file. Please check the file format.');

@@ -11,13 +11,14 @@ This is a full-featured wedding planning application built with React 18 (via CD
 ### 👥 Guest Management
 - **Single & Family Entries**: Manage individual guests or entire families
 - **RSVP Tracking**: Track confirmations (yes/pending/no)
-- **Detailed Information**: Phone, dietary preferences, room assignments, arrival/departure dates
+- **Detailed Information**: Phone, dietary preferences (Veg/Jain), room assignments, arrival/departure dates
 - **Aadhar Collection**: Track document collection for venue requirements
 - **Gift Tracking**: Record gifts received with amounts and descriptions
 - **Transport Needs**: Flag guests requiring transportation
 - **Ceremony Participation**: Track which ceremonies each guest will attend
 - **Categories & Relations**: Customizable categories and North Indian family relations
 - **Side Tracking**: Separate bride's and groom's side guests
+- **Enhanced Table View**: Improved fonts and column ordering for better readability
 
 ### 🤝 Vendor Management
 - **40+ Vendor Types**: Pre-configured types including pandit, decorator, caterer, DJ, photographer, mehendi artist, band baja, dhol players, horse/ghodi rental, etc.
@@ -56,7 +57,7 @@ This is a full-featured wedding planning application built with React 18 (via CD
 - **Event-Based Menus**: Create separate menus for different events
 - **Guest Count**: Track expected attendees per event
 - **Menu Items**: Add dishes with costs
-- **Dietary Tracking**: Automatic veg/non-veg guest counts
+- **Dietary Tracking**: Automatic Veg/Jain guest counts
 - **Cost Calculation**: Automatic total cost per menu
 
 ### 🎁 Gifts & Favors
@@ -99,9 +100,9 @@ This is a full-featured wedding planning application built with React 18 (via CD
 
 ### ⚙️ Settings
 - **Wedding Info**: Bride/groom names, date, location, total budget
-- **Data Management**: Export/import JSON data
+- **Data Management**: Export/import JSON data with auto-dismiss notifications
 - **Backup & Restore**: Full data backup and restore functionality
-- **Custom Lists**: Manage custom categories, relations, dietary preferences
+- **Custom Lists**: Manage custom categories, relations, dietary preferences (Veg/Jain)
 
 ## 🏗️ Architecture
 
@@ -126,8 +127,11 @@ wedding-planner-app/
 ├── manifest.json                       # PWA manifest
 ├── components/
 │   ├── shared-components-bundle.js     # Shared UI components and hooks
+│   ├── error-boundary.js               # Error boundary component
+│   ├── notification-component.js       # Reusable notification system
 │   ├── header-component.js             # Header with countdown
 │   ├── tabs-component.js               # Navigation tabs with stats
+│   ├── analytics-dashboard-components.js # Advanced analytics components
 │   ├── dashboard-component.js          # Dashboard with analytics
 │   ├── timeline-component.js           # Timeline management
 │   ├── guest-components.js             # Guest management
@@ -140,6 +144,10 @@ wedding-planner-app/
 │   ├── shopping-components.js          # Shopping lists
 │   ├── travel-components.js            # Travel & transport
 │   └── setting-components.js           # Settings & data management
+├── styles/
+│   └── accessibility.css               # Accessibility-specific styles
+├── utils/
+│   └── security.js                     # Security utilities
 └── icons/                              # PWA icons (72x72 to 512x512)
 ```
 
@@ -154,10 +162,12 @@ The app loads scripts in a specific order to ensure dependencies are available:
 5. **shared-components-bundle.js** - Shared components and hooks
 6. **header-component.js** - Header
 7. **tabs-component.js** - Navigation
-8. **dashboard-component.js** - Dashboard
-9. **Feature components** - All feature-specific components
-10. **app.js** - Main app (must be last)
-11. **pwa.js** - PWA registration
+8. **analytics-dashboard-components.js** - Analytics components
+9. **dashboard-component.js** - Dashboard
+10. **Feature components** - All feature-specific components
+11. **notification-component.js** - Notification system
+12. **app.js** - Main app (must be last)
+13. **pwa.js** - PWA registration
 
 ### Shared Components (`shared-components-bundle.js`)
 
@@ -176,6 +186,7 @@ The app loads scripts in a specific order to ensure dependencies are available:
 - `useCRUD` - Handles add/edit/save/delete operations and modal state (~60 lines saved per component)
 - `useWeddingProgress` - Calculates wedding planning progress metrics
 - `useFilter` - Manages filtering logic and state (~10 lines saved per component)
+- `useNotification` - Manages notification state with auto-dismiss functionality
 
 **Constants:**
 - `NORTH_INDIAN_RELATIONS` - Pre-defined family relations
@@ -381,19 +392,22 @@ window.securityUtils.encryptGuestData(guest);
 
 ## 📊 Code Statistics
 
-- **Total Components**: 15+ feature components
-- **Shared Components**: 8 reusable UI components
-- **Custom Hooks**: 3 shared hooks
-- **Code Reuse**: ~170 lines eliminated through shared components
-- **Reduction**: ~15% code reduction with improved maintainability
+- **Total Components**: 17+ feature components
+- **Shared Components**: 9 reusable UI components
+- **Custom Hooks**: 4 shared hooks
+- **Code Reuse**: ~200 lines eliminated through shared components
+- **Reduction**: ~18% code reduction with improved maintainability
 
-## 🔧 Recent Improvements (v2.1)
+## 🔧 Recent Improvements (v2.2)
 
-- **Service Worker**: Fixed cache URLs for proper offline functionality
-- **Validation**: Enhanced all validators with comprehensive checks and error handling
-- **Error Prevention**: Added division-by-zero guards in dashboard calculations
-- **Data Integrity**: Improved async storage operations and error handling
-- **User Experience**: Better error messages and edge case handling
+- **Dietary Preferences**: Simplified to Veg and Jain options only (removed non-veg)
+- **Notification System**: Auto-dismissing notification banners for better UX (no modal blocking)
+- **Guest Table**: Improved fonts, sizing, and column ordering (Phone/Room before Notes)
+- **Accessibility**: Fixed skip link positioning for better keyboard navigation
+- **Service Worker**: Fixed cache URLs for proper offline functionality (v2.1)
+- **Validation**: Enhanced all validators with comprehensive checks and error handling (v2.1)
+- **Error Prevention**: Added division-by-zero guards in dashboard calculations (v2.1)
+- **Data Integrity**: Improved async storage operations and error handling (v2.1)
 
 ## 🛠️ Development
 

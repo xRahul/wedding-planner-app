@@ -7,6 +7,7 @@ const WeddingPlannerApp = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { notification, showNotification, closeNotification } = useNotification();
 
     // Load initial data
     useEffect(() => {
@@ -71,6 +72,13 @@ const WeddingPlannerApp = () => {
                     </div>
                 </div>
             )}
+            {notification && (
+                <Notification 
+                    message={notification.message} 
+                    type={notification.type} 
+                    onClose={closeNotification} 
+                />
+            )}
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             <main id="main-content" className="container">
                 {activeTab === 'dashboard' && <Dashboard data={data} />}
@@ -84,7 +92,7 @@ const WeddingPlannerApp = () => {
                 {activeTab === 'rituals' && <Rituals ritualsAndCustoms={data.ritualsAndCustoms} traditions={data.traditions} updateData={updateData} />}
                 {activeTab === 'gifts' && <Gifts giftsAndFavors={data.giftsAndFavors} updateData={updateData} />}
                 {activeTab === 'travel' && <Travel travel={data.travel} updateData={updateData} />}
-                {activeTab === 'settings' && <Settings weddingInfo={data.weddingInfo} updateData={updateData} allData={data} setData={setData} />}
+                {activeTab === 'settings' && <Settings weddingInfo={data.weddingInfo} updateData={updateData} allData={data} setData={setData} showNotification={showNotification} />}
             </main>
         </div>
     );

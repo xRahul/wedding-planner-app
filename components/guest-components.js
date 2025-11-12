@@ -224,30 +224,30 @@ const Guests = ({ guests, updateData, data }) => {
                         <table className="table">
                             <thead>
                                 <tr>
-                                    <th>Type</th>
-                                    <th>Name</th>
-                                    <th>Side</th>
-                                    <th>Relation</th>
-                                    <th>Phone</th>
-                                    <th>Room</th>
-                                    <th>Arrival</th>
-                                    <th>Departure</th>
-                                    <th>Dietary</th>
-                                    <th>Category</th>
-                                    <th>RSVP</th>
-                                    <th>Aadhar</th>
-                                    <th>Notes</th>
-                                    <th>Actions</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Type</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Name</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Side</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Relation</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Dietary</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Category</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>RSVP</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Aadhar</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Arrival</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Departure</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Phone</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Room</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Notes</th>
+                                    <th style={{ fontSize: '14px', fontWeight: '600' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredGuests.map(guest => (
                                     <tr key={guest.id}>
-                                        <td><span className="badge badge-info">{guest.type === 'family' ? '👨👩👧👦 Family' : '👤 Single'}</span></td>
-                                        <td>
+                                        <td style={{ fontSize: '13px' }}><span className="badge badge-info">{guest.type === 'family' ? '👨👩👧👦 Family' : '👤 Single'}</span></td>
+                                        <td style={{ fontSize: '14px' }}>
                                             <strong>{guest.name}</strong>
                                             {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
                                                     {guest.familyMembers.map((member, idx) => (
                                                         <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                                                             • {member.name}
@@ -256,10 +256,10 @@ const Guests = ({ guests, updateData, data }) => {
                                                 </div>
                                             )}
                                         </td>
-                                        <td style={{ textTransform: 'capitalize' }}>
+                                        <td style={{ textTransform: 'capitalize', fontSize: '13px' }}>
                                             {guest.side}
                                             {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
                                                     {guest.familyMembers.map((member, idx) => (
                                                         <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                                                             • {guest.side}
@@ -268,10 +268,10 @@ const Guests = ({ guests, updateData, data }) => {
                                                 </div>
                                             )}
                                         </td>
-                                        <td style={{ textTransform: 'capitalize' }}>
+                                        <td style={{ textTransform: 'capitalize', fontSize: '13px' }}>
                                             {guest.relation?.replace('_', ' ')}
                                             {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
                                                     {guest.familyMembers.map((member, idx) => (
                                                         <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                                                             • {member.familyRelation?.replace('_', ' ')}
@@ -280,58 +280,10 @@ const Guests = ({ guests, updateData, data }) => {
                                                 </div>
                                             )}
                                         </td>
-                                        <td>
-                                            {guest.phone}
-                                            {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
-                                                    {guest.familyMembers.map((member, idx) => (
-                                                        <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                                                            • {member.phone || '-'}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td>
-                                            {guest.room || '-'}
-                                            {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
-                                                    {guest.familyMembers.map((member, idx) => (
-                                                        <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                                                            • {member.room || '-'}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td style={{ fontSize: '11px' }}>
-                                            {guest.arrivalDate ? formatDate(guest.arrivalDate) : '-'}
-                                            {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
-                                                    {guest.familyMembers.map((member, idx) => (
-                                                        <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                                                            • {member.arrivalDate ? formatDate(member.arrivalDate) : '-'}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td style={{ fontSize: '11px' }}>
-                                            {guest.departureDate ? formatDate(guest.departureDate) : '-'}
-                                            {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
-                                                    {guest.familyMembers.map((member, idx) => (
-                                                        <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                                                            • {member.departureDate ? formatDate(member.departureDate) : '-'}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td style={{ textTransform: 'capitalize' }}>
+                                        <td style={{ textTransform: 'capitalize', fontSize: '13px' }}>
                                             {guest.dietary?.replace('_', ' ')}
                                             {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
                                                     {guest.familyMembers.map((member, idx) => (
                                                         <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                                                             • {member.dietary?.replace('_', ' ')}
@@ -340,10 +292,10 @@ const Guests = ({ guests, updateData, data }) => {
                                                 </div>
                                             )}
                                         </td>
-                                        <td style={{ textTransform: 'capitalize' }}>
+                                        <td style={{ textTransform: 'capitalize', fontSize: '13px' }}>
                                             {guest.category?.replace('_', ' ')}
                                             {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
                                                     {guest.familyMembers.map((member, idx) => (
                                                         <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                                                             • {guest.category?.replace('_', ' ')}
@@ -357,7 +309,7 @@ const Guests = ({ guests, updateData, data }) => {
                                                 {guest.rsvpStatus === 'yes' ? 'Yes' : guest.rsvpStatus === 'no' ? 'No' : 'Pending'}
                                             </Badge>
                                             {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
                                                     {guest.familyMembers.map((member, idx) => (
                                                         <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                                                             • <span className={`badge ${guest.rsvpStatus === 'yes' ? 'badge-success' : guest.rsvpStatus === 'no' ? 'badge-error' : 'badge-warning'}`}>
@@ -368,10 +320,10 @@ const Guests = ({ guests, updateData, data }) => {
                                                 </div>
                                             )}
                                         </td>
-                                        <td>
+                                        <td style={{ fontSize: '16px' }}>
                                             {guest.aadharCollected ? '✅' : '❌'}
                                             {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                <div style={{ fontSize: '14px', marginTop: '4px' }}>
                                                     {guest.familyMembers.map((member, idx) => (
                                                         <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                                                             • {member.aadharCollected ? '✅' : '❌'}
@@ -381,9 +333,57 @@ const Guests = ({ guests, updateData, data }) => {
                                             )}
                                         </td>
                                         <td style={{ fontSize: '12px' }}>
+                                            {guest.arrivalDate ? formatDate(guest.arrivalDate) : '-'}
+                                            {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                                                    {guest.familyMembers.map((member, idx) => (
+                                                        <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                            • {member.arrivalDate ? formatDate(member.arrivalDate) : '-'}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td style={{ fontSize: '12px' }}>
+                                            {guest.departureDate ? formatDate(guest.departureDate) : '-'}
+                                            {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                                                    {guest.familyMembers.map((member, idx) => (
+                                                        <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                            • {member.departureDate ? formatDate(member.departureDate) : '-'}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td style={{ fontSize: '13px' }}>
+                                            {guest.phone}
+                                            {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                                                    {guest.familyMembers.map((member, idx) => (
+                                                        <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                            • {member.phone || '-'}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td style={{ fontSize: '13px' }}>
+                                            {guest.room || '-'}
+                                            {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                                                    {guest.familyMembers.map((member, idx) => (
+                                                        <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                                                            • {member.room || '-'}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td style={{ fontSize: '13px' }}>
                                             {guest.notes}
                                             {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
-                                                <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                <div style={{ fontSize: '12px', marginTop: '4px' }}>
                                                     {guest.familyMembers.map((member, idx) => (
                                                         <div key={member.id} style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                                                             • -
