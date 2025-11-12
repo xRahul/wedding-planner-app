@@ -1185,19 +1185,20 @@ const { useState, useEffect, useMemo } = React;
 
         const GiftModal = ({ item, onSave, onClose }) => {
             const [formData, setFormData] = useState(item);
-            const [northIndianEvents, setNorthIndianEvents] = useState([
+            const defaultEvents = [
                 'Roka', 'Sagan', 'Tilak', 'Ring Ceremony',
                 'Mehendi', 'Sangeet', 'Haldi', 
                 'Ganesh Puja', 'Kalash Sthapna', 'Mandap Muhurat',
                 'Baraat', 'Jaimala', 'Pheras', 'Vidai', 
                 'Reception', 'Grih Pravesh', 'Pag Phera'
-            ]);
+            ];
+            const [northIndianEvents, setNorthIndianEvents] = useState(defaultEvents);
 
             useEffect(() => {
                 const loadCustomEvents = async () => {
                     const data = await loadData();
                     if (data.customGiftEvents && data.customGiftEvents.length > 0) {
-                        const allEvents = [...new Set([...northIndianEvents, ...data.customGiftEvents])];
+                        const allEvents = [...new Set([...defaultEvents, ...data.customGiftEvents])];
                         setNorthIndianEvents(allEvents);
                     }
                 };
@@ -1235,13 +1236,14 @@ const { useState, useEffect, useMemo } = React;
             };
 
             const handleSaveWithCustomEvent = async () => {
-                if (formData.event && !northIndianEvents.includes(formData.event)) {
+                if (formData.event && !defaultEvents.includes(formData.event)) {
                     const data = await loadData();
                     const customEvents = data.customGiftEvents || [];
                     if (!customEvents.includes(formData.event)) {
                         customEvents.push(formData.event);
                         data.customGiftEvents = customEvents;
                         await saveData(data);
+                        setNorthIndianEvents([...new Set([...defaultEvents, ...customEvents])]);
                     }
                 }
                 onSave(formData);

@@ -864,7 +864,7 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
 
         const VendorModal = ({ vendor, onSave, onClose }) => {
             const [formData, setFormData] = useState(vendor);
-            const [vendorTypes, setVendorTypes] = useState([
+            const defaultVendorTypes = [
                 'pandit_ji', 'decorator', 'caterer', 'dj', 
                 'photographer', 'videographer', 'florist', 
                 'mehendi_artist', 'makeup_artist', 'choreographer',
@@ -872,26 +872,28 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
                 'wedding_planner', 'invitation_cards', 'transport',
                 'tent_house', 'sound_system', 'fireworks',
                 'stage_setup', 'varmala_setup', 'luxury_car_rental'
-            ]);
+            ];
+            const [vendorTypes, setVendorTypes] = useState(defaultVendorTypes);
 
             useEffect(() => {
                 const loadCustomVendorTypes = async () => {
                     const data = await loadData();
                     if (data.customVendorTypes && data.customVendorTypes.length > 0) {
-                        setVendorTypes([...new Set([...vendorTypes, ...data.customVendorTypes])]);
+                        setVendorTypes([...new Set([...defaultVendorTypes, ...data.customVendorTypes])]);
                     }
                 };
                 loadCustomVendorTypes();
             }, []);
 
             const handleSaveWithCustomType = async () => {
-                if (formData.type && !vendorTypes.includes(formData.type)) {
+                if (formData.type && !defaultVendorTypes.includes(formData.type)) {
                     const data = await loadData();
                     const customTypes = data.customVendorTypes || [];
                     if (!customTypes.includes(formData.type)) {
                         customTypes.push(formData.type);
                         data.customVendorTypes = customTypes;
                         await saveData(data);
+                        setVendorTypes([...new Set([...defaultVendorTypes, ...customTypes])]);
                     }
                 }
                 onSave(formData);
