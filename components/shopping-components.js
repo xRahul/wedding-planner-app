@@ -65,39 +65,101 @@ const { useState, useEffect, useMemo } = React;
                 <div>
                     <div className="card">
                         <h2 className="card-title">Shopping List</h2>
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
                             <button 
                                 className={`btn ${activeCategory === 'bride' ? 'btn-primary' : 'btn-outline'}`}
                                 onClick={() => setActiveCategory('bride')}
                             >
-                                👰 Bride
+                                👰 Bride ({shopping.bride?.reduce((sum, e) => sum + e.items.length, 0) || 0} items)
                             </button>
                             <button 
                                 className={`btn ${activeCategory === 'groom' ? 'btn-primary' : 'btn-outline'}`}
                                 onClick={() => setActiveCategory('groom')}
                             >
-                                🤵 Groom
+                                🤵 Groom ({shopping.groom?.reduce((sum, e) => sum + e.items.length, 0) || 0} items)
                             </button>
                             <button 
                                 className={`btn ${activeCategory === 'family' ? 'btn-primary' : 'btn-outline'}`}
                                 onClick={() => setActiveCategory('family')}
                             >
-                                👨‍👩‍👧‍👦 Family
+                                👨‍👩‍👧‍👦 Family ({shopping.family?.reduce((sum, e) => sum + e.items.length, 0) || 0} items)
                             </button>
                         </div>
-                        <p><strong>Total Budget:</strong> {formatCurrency(totalBudget)}</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Budget</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{formatCurrency(totalBudget)}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Items</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                                    {Object.values(shopping).reduce((sum, category) => sum + category.reduce((catSum, event) => catSum + event.items.length, 0), 0)}
+                                </div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Completed</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-success)' }}>
+                                    {Object.values(shopping).reduce((sum, category) => sum + category.reduce((catSum, event) => catSum + event.items.filter(i => i.status === 'completed').length, 0), 0)}
+                                </div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Pending</div>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-warning)' }}>
+                                    {Object.values(shopping).reduce((sum, category) => sum + category.reduce((catSum, event) => catSum + event.items.filter(i => i.status === 'pending').length, 0), 0)}
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {shopping[activeCategory].map(event => (
                         <div key={event.event} className="card">
                             <div className="flex-between">
-                                <h3>{event.event}</h3>
-                                <button 
-                                    className="btn btn-primary btn-small"
-                                    onClick={() => handleAddItem(activeCategory, event.event)}
-                                >
-                                    Add Item
-                                </button>
+                                <div>
+                                    <h3>{event.event}</h3>
+                                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                                        {event.items.length} items • {formatCurrency(event.items.reduce((sum, item) => sum + (item.budget || 0), 0))} budget
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button 
+                                        className="btn btn-outline btn-small"
+                                        onClick={() => {
+                                            const templates = {
+                                                bride: {
+                                                    'Mehendi': [{ item: 'Mehendi Lehenga', budget: 25000, status: 'pending', notes: 'Green or yellow color' }, { item: 'Mehendi Jewelry', budget: 15000, status: 'pending', notes: 'Floral jewelry' }],
+                                                    'Sangeet': [{ item: 'Sangeet Outfit', budget: 20000, status: 'pending', notes: 'Dance-friendly outfit' }, { item: 'Dancing Shoes', budget: 3000, status: 'pending', notes: 'Comfortable heels' }],
+                                                    'Wedding': [{ item: 'Bridal Lehenga', budget: 80000, status: 'pending', notes: 'Red or maroon traditional' }, { item: 'Bridal Jewelry Set', budget: 150000, status: 'pending', notes: 'Gold jewelry set' }],
+                                                    'Reception': [{ item: 'Reception Gown/Saree', budget: 35000, status: 'pending', notes: 'Designer outfit' }, { item: 'Reception Jewelry', budget: 25000, status: 'pending', notes: 'Diamond or gold' }]
+                                                },
+                                                groom: {
+                                                    'Sangeet': [{ item: 'Sangeet Kurta', budget: 8000, status: 'pending', notes: 'Colorful kurta pajama' }, { item: 'Mojaris', budget: 4000, status: 'pending', notes: 'Traditional footwear' }],
+                                                    'Wedding': [{ item: 'Wedding Sherwani', budget: 25000, status: 'pending', notes: 'Cream or gold sherwani' }, { item: 'Sehra', budget: 2000, status: 'pending', notes: 'Groom\'s face veil' }, { item: 'Kalgi', budget: 1500, status: 'pending', notes: 'Turban ornament' }],
+                                                    'Reception': [{ item: 'Reception Suit', budget: 15000, status: 'pending', notes: 'Western or Indo-western' }]
+                                                },
+                                                family: {
+                                                    'General': [{ item: 'Family Coordination Outfits', budget: 50000, status: 'pending', notes: 'Matching color theme' }, { item: 'Gift Wrapping Supplies', budget: 5000, status: 'pending', notes: 'For shagun and gifts' }]
+                                                }
+                                            };
+                                            const categoryItems = templates[activeCategory]?.[event.event] || [];
+                                            if (categoryItems.length > 0) {
+                                                const newShopping = { ...shopping };
+                                                const categoryEvent = newShopping[activeCategory].find(e => e.event === event.event);
+                                                if (categoryEvent) {
+                                                    categoryEvent.items = [...categoryEvent.items, ...categoryItems];
+                                                    updateData('shopping', newShopping);
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        Add Templates
+                                    </button>
+                                    <button 
+                                        className="btn btn-primary btn-small"
+                                        onClick={() => handleAddItem(activeCategory, event.event)}
+                                    >
+                                        Add Custom Item
+                                    </button>
+                                </div>
                             </div>
                             <div className="table-container">
                                 <table className="table">

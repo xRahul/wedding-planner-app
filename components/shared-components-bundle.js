@@ -34,12 +34,43 @@ const FormField = ({ label, type = 'text', value, onChange, error, required, pla
     </div>
 );
 
-const Badge = ({ status, children }) => {
+const Badge = ({ status, children, size = 'normal' }) => {
     const variant = ['yes', 'confirmed', 'done', 'purchased', 'completed', 'received'].includes(status) ? 'badge-success' :
                    ['no', 'declined', 'high'].includes(status) ? 'badge-error' :
                    ['pending', 'medium'].includes(status) ? 'badge-warning' : 'badge-info';
-    return <span className={`badge ${variant}`}>{children || status}</span>;
+    const sizeClass = size === 'small' ? 'badge-small' : '';
+    return <span className={`badge ${variant} ${sizeClass}`}>{children || status}</span>;
 };
+
+const ProgressRing = ({ percentage, size = 60, strokeWidth = 4, color = 'var(--color-primary)' }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const offset = circumference - (percentage / 100) * circumference;
+    
+    return (
+        <div style={{ position: 'relative', width: size, height: size }}>
+            <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx={size/2} cy={size/2} r={radius} stroke="var(--color-border)" strokeWidth={strokeWidth} fill="none" />
+                <circle cx={size/2} cy={size/2} r={radius} stroke={color} strokeWidth={strokeWidth} fill="none"
+                    strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" />
+            </svg>
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '12px', fontWeight: 'bold' }}>
+                {Math.round(percentage)}%
+            </div>
+        </div>
+    );
+};
+
+const QuickStats = ({ stats }) => (
+    <div className="quick-stats">
+        {stats.map((stat, idx) => (
+            <div key={idx} className="quick-stat">
+                <div className="quick-stat-value" style={{ color: stat.color }}>{stat.value}</div>
+                <div className="quick-stat-label">{stat.label}</div>
+            </div>
+        ))}
+    </div>
+);
 
 const EmptyState = ({ icon, message, description }) => (
     <div className="empty-state">
@@ -103,6 +134,22 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
     );
 };
 
+// ==================== NORTH INDIAN WEDDING CONSTANTS ====================
+
+const NORTH_INDIAN_RELATIONS = [
+    'father', 'mother', 'brother', 'sister', 'uncle', 'aunt', 'cousin',
+    'grandfather', 'grandmother', 'nephew', 'niece', 'son_in_law', 'daughter_in_law',
+    'mama', 'mami', 'chacha', 'chachi', 'tau', 'tayi', 'bua', 'fufa',
+    'nana', 'nani', 'dada', 'dadi', 'jija', 'saala', 'saali', 'devar', 'jethani'
+];
+
+const NORTH_INDIAN_CEREMONIES = [
+    'Roka', 'Sagan', 'Tilak', 'Ring Ceremony', 'Mehendi', 'Sangeet', 'Haldi',
+    'Ganesh Puja', 'Kalash Sthapna', 'Mandap Muhurat', 'Baraat', 'Milni',
+    'Jaimala', 'Kanyadaan', 'Pheras', 'Sindoor', 'Vidai', 'Reception',
+    'Grih Pravesh', 'Pag Phera', 'Mooh Dikhai'
+];
+
 // ==================== SHARED HOOKS ====================
 
 const useCRUD = (items, updateData, dataKey, validator) => {
@@ -146,6 +193,23 @@ const useCRUD = (items, updateData, dataKey, validator) => {
     };
 
     return { showModal, editing, handleAdd, handleEdit, handleSave, handleDelete, closeModal };
+};
+
+const useWeddingProgress = (data) => {
+    return useMemo(() => {
+        const totalTasks = data.tasks?.length || 0;
+        const completedTasks = data.tasks?.filter(t => t.status === 'done').length || 0;
+        const totalGuests = data.guests?.length || 0;
+        const confirmedGuests = data.guests?.filter(g => g.rsvpStatus === 'yes').length || 0;
+        const totalVendors = data.vendors?.length || 0;
+        const confirmedVendors = data.vendors?.filter(v => ['confirmed', 'booked'].includes(v.status)).length || 0;
+        
+        return {
+            tasks: { completed: completedTasks, total: totalTasks, percentage: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0 },
+            guests: { confirmed: confirmedGuests, total: totalGuests, percentage: totalGuests > 0 ? (confirmedGuests / totalGuests) * 100 : 0 },
+            vendors: { confirmed: confirmedVendors, total: totalVendors, percentage: totalVendors > 0 ? (confirmedVendors / totalVendors) * 100 : 0 }
+        };
+    }, [data]);
 };
 
 const useFilter = (items, filterFn) => {

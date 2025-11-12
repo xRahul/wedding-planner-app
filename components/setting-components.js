@@ -236,18 +236,61 @@ const { useState, useEffect, useMemo } = React;
                     </div>
 
                     <div className="card">
-                        <h2 className="card-title">About This App</h2>
+                        <h2 className="card-title">Data Statistics</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Guests</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{allData.guests?.length || 0}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Vendors</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{allData.vendors?.length || 0}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Tasks</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{allData.tasks?.length || 0}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Budget Categories</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{allData.budget?.length || 0}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Timeline Events</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{allData.timeline?.reduce((sum, day) => sum + (day.events?.length || 0), 0) || 0}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Transport Vehicles</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{allData.travel?.transport?.length || 0}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h2 className="card-title">About North Indian Wedding Planner</h2>
                         <p style={{ marginBottom: '8px' }}>
-                            <strong>Wedding Planner</strong> - A complete wedding management solution
+                            <strong>💒 Complete North Indian Wedding Management Solution</strong>
                         </p>
                         <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                            This application stores all data in memory during your session. 
-                            Make sure to export your data regularly as a backup to save your progress. 
-                            Use the Export/Import feature to backup and restore your data.
+                            Specially designed for North Indian weddings with features for traditional ceremonies, 
+                            ritual management, vendor coordination, and guest management. Includes templates for 
+                            common rituals like Mehendi, Sangeet, Haldi, Baraat, and Pheras.
                         </p>
-                        <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', marginTop: '8px' }}>
-                            <strong>Features:</strong> Dashboard, Timeline Management, Guest List, Vendor Management, 
-                            Budget Tracking, Tasks Checklist, Event Menus, Travel &amp; Accommodations, Data Export/Import
+                        <div style={{ marginTop: '12px', padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>Key Features</div>
+                            <div style={{ fontSize: '13px', lineHeight: '1.5' }}>
+                                • Traditional ritual planning with North Indian ceremonies<br/>
+                                • Vendor management with Indian wedding specific categories<br/>
+                                • Guest management with family structures and gift tracking<br/>
+                                • Budget tracking with wedding-specific categories<br/>
+                                • Transport coordination for baraat and guest travel<br/>
+                                • Menu planning with North Indian cuisine options<br/>
+                                • Shopping lists with traditional outfit categories<br/>
+                                • Timeline management with ceremony scheduling
+                            </div>
+                        </div>
+                        <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '12px' }}>
+                            💾 <strong>Data Storage:</strong> All data is stored locally in your browser. 
+                            Use Export/Import to backup and restore your wedding planning data.
                         </p>
                     </div>
                 </div>

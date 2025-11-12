@@ -134,8 +134,8 @@ const Timeline = ({ timeline, updateData, weddingDate }) => {
         <div>
             <div className="card">
                 <div className="flex-between">
-                    <h2 className="card-title">Wedding Timeline</h2>
-                    <button className="btn btn-primary" onClick={() => handleAddEvent(0)}>Add Event</button>
+                    <h2 className="card-title">🗓️ Wedding Timeline</h2>
+                    <button className="btn btn-primary" onClick={() => handleAddEvent(0)}>Add Custom Event</button>
                 </div>
             </div>
 

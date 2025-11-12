@@ -80,8 +80,22 @@ const Menus = ({ menus, updateData }) => {
         <div>
             <div className="card">
                 <div className="flex-between">
-                    <h2 className="card-title">Event Menus</h2>
-                    <button className="btn btn-primary" onClick={handleAddEvent}>Add Event</button>
+                    <h2 className="card-title">🍽️ Event Menus</h2>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="btn btn-outline btn-small" onClick={() => {
+                            const weddingEvents = [
+                                { id: generateId(), name: 'Mehendi Function', expectedGuests: 0, attendedGuests: 0, items: [] },
+                                { id: generateId(), name: 'Sangeet Night', expectedGuests: 0, attendedGuests: 0, items: [] },
+                                { id: generateId(), name: 'Haldi Ceremony', expectedGuests: 0, attendedGuests: 0, items: [] },
+                                { id: generateId(), name: 'Wedding Day Lunch', expectedGuests: 0, attendedGuests: 0, items: [] },
+                                { id: generateId(), name: 'Wedding Day Dinner', expectedGuests: 0, attendedGuests: 0, items: [] },
+                                { id: generateId(), name: 'Reception Party', expectedGuests: 0, attendedGuests: 0, items: [] }
+                            ];
+                            const updatedMenus = [...menus, ...weddingEvents];
+                            updateData('menus', updatedMenus);
+                        }}>Add Wedding Events</button>
+                        <button className="btn btn-primary" onClick={handleAddEvent}>Add Custom Event</button>
+                    </div>
                 </div>
             </div>
 
@@ -97,9 +111,31 @@ const Menus = ({ menus, updateData }) => {
                                     <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                                         Expected: {event.expectedGuests || 0} guests | Attended: {event.attendedGuests || 0} guests
                                     </div>
-                                    <div style={{ marginTop: '8px', display: 'flex', gap: '16px' }}>
-                                        <p><strong>Expected Total:</strong> {formatCurrency(expTotal)}</p>
-                                        <p><strong>Actual Total:</strong> {formatCurrency(actTotal)}</p>
+                                    <div style={{ marginTop: '8px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+                                        <div style={{ padding: '8px', background: 'var(--color-bg-secondary)', borderRadius: '4px' }}>
+                                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Expected Total</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{formatCurrency(expTotal)}</div>
+                                            <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>
+                                                {event.expectedGuests > 0 ? formatCurrency(expTotal / event.expectedGuests) + ' per person' : ''}
+                                            </div>
+                                        </div>
+                                        <div style={{ padding: '8px', background: 'var(--color-bg-secondary)', borderRadius: '4px' }}>
+                                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Actual Total</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--color-success)' }}>{formatCurrency(actTotal)}</div>
+                                            <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>
+                                                {event.attendedGuests > 0 ? formatCurrency(actTotal / event.attendedGuests) + ' per person' : ''}
+                                            </div>
+                                        </div>
+                                        <div style={{ padding: '8px', background: 'var(--color-bg-secondary)', borderRadius: '4px' }}>
+                                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Items Count</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{event.items?.length || 0}</div>
+                                        </div>
+                                        <div style={{ padding: '8px', background: 'var(--color-bg-secondary)', borderRadius: '4px' }}>
+                                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Variance</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 'bold', color: actTotal > expTotal ? 'var(--color-error)' : 'var(--color-success)' }}>
+                                                {expTotal > 0 ? ((actTotal - expTotal) / expTotal * 100).toFixed(1) + '%' : '0%'}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
@@ -110,7 +146,29 @@ const Menus = ({ menus, updateData }) => {
                             <div style={{ marginTop: '16px' }}>
                                 <div className="flex-between" style={{ marginBottom: '12px' }}>
                                     <strong>Menu Items</strong>
-                                    <button className="btn btn-primary btn-small" onClick={() => handleAddItem(event.id)}>Add Item</button>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        <button className="btn btn-outline btn-small" onClick={() => {
+                                            const northIndianItems = [
+                                                { name: 'Dal Makhani', pricePerPlate: 45, description: 'Rich black lentils in creamy gravy' },
+                                                { name: 'Paneer Butter Masala', pricePerPlate: 65, description: 'Cottage cheese in tomato-butter gravy' },
+                                                { name: 'Chicken Butter Masala', pricePerPlate: 85, description: 'Tender chicken in rich tomato gravy' },
+                                                { name: 'Mutton Rogan Josh', pricePerPlate: 120, description: 'Aromatic lamb curry' },
+                                                { name: 'Jeera Rice', pricePerPlate: 25, description: 'Cumin flavored basmati rice' },
+                                                { name: 'Butter Naan', pricePerPlate: 15, description: 'Soft leavened bread with butter' },
+                                                { name: 'Mixed Vegetable', pricePerPlate: 35, description: 'Seasonal vegetables curry' },
+                                                { name: 'Raita', pricePerPlate: 20, description: 'Yogurt with cucumber and spices' },
+                                                { name: 'Gulab Jamun', pricePerPlate: 25, description: 'Sweet milk dumplings in syrup' },
+                                                { name: 'Kulfi', pricePerPlate: 30, description: 'Traditional Indian ice cream' }
+                                            ];
+                                            const updatedMenus = [...menus];
+                                            const eventIdx = updatedMenus.findIndex(m => m.id === event.id);
+                                            if (eventIdx >= 0) {
+                                                updatedMenus[eventIdx].items = [...(updatedMenus[eventIdx].items || []), ...northIndianItems];
+                                                updateData('menus', updatedMenus);
+                                            }
+                                        }}>Add North Indian Menu</button>
+                                        <button className="btn btn-primary btn-small" onClick={() => handleAddItem(event.id)}>Add Custom Item</button>
+                                    </div>
                                 </div>
                                 {event.items?.length > 0 ? (
                                     <div className="table-container">

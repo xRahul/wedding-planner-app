@@ -84,6 +84,7 @@ const Rituals = ({ ritualsAndCustoms, traditions, updateData }) => {
                     <button className={`btn ${activeTab === 'main' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('main')}>Main Ceremonies</button>
                     <button className={`btn ${activeTab === 'customs' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('customs')}>Customs</button>
                     <button className={`btn ${activeTab === 'items' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('items')}>Ritual Items</button>
+                    <button className={`btn ${activeTab === 'templates' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('templates')}>Templates</button>
                 </div>
             </div>
 

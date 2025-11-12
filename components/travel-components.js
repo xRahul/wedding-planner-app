@@ -80,10 +80,38 @@ const { useState, useEffect, useMemo } = React;
                             <h2 className="card-title">🚌 Transport Arrangements</h2>
                             <button className="btn btn-primary" onClick={handleAddTransport}>Add Transport</button>
                         </div>
-                        <div style={{ marginTop: '16px', display: 'flex', gap: '24px' }}>
-                            <p><strong>Total Cost:</strong> {formatCurrency(totalCost)}</p>
-                            <p><strong>Total Kilometers:</strong> {totalKilometers} km</p>
-                            <p><strong>Total Vehicles:</strong> {(travel.transport || []).length}</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '16px' }}>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Cost</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatCurrency(totalCost)}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Distance</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{totalKilometers} km</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Vehicles</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{(travel.transport || []).length}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Seats</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{(travel.transport || []).reduce((sum, t) => sum + (t.seats || 0), 0)}</div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Cost per KM</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                                    {totalKilometers > 0 ? formatCurrency(totalCost / totalKilometers) : formatCurrency(0)}
+                                </div>
+                            </div>
+                            <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Cost per Seat</div>
+                                <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                                    {(travel.transport || []).reduce((sum, t) => sum + (t.seats || 0), 0) > 0 ? 
+                                        formatCurrency(totalCost / (travel.transport || []).reduce((sum, t) => sum + (t.seats || 0), 0)) : 
+                                        formatCurrency(0)
+                                    }
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -139,6 +167,18 @@ const { useState, useEffect, useMemo } = React;
                                 <div className="empty-state-icon">🚌</div>
                                 <p>No transport arrangements added</p>
                                 <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', marginTop: '8px' }}>Add buses, cars, vans for guest transportation</p>
+                                <div style={{ marginTop: '16px' }}>
+                                    <button className="btn btn-outline btn-small" onClick={() => {
+                                        const commonTransport = [
+                                            { id: generateId(), vehicleType: 'bus', vehicleName: 'AC Bus for Baraat', seats: 45, totalPrice: 15000, kilometers: 200, route: 'Delhi to Wedding Venue', notes: 'For groom\'s family and friends' },
+                                            { id: generateId(), vehicleType: 'luxury_coach', vehicleName: 'Luxury Coach', seats: 35, totalPrice: 25000, kilometers: 200, route: 'Guest pickup points', notes: 'For VIP guests' },
+                                            { id: generateId(), vehicleType: 'tempo_traveller', vehicleName: 'Tempo Traveller', seats: 12, totalPrice: 8000, kilometers: 150, route: 'Local pickup', notes: 'For elderly guests' }
+                                        ];
+                                        const updatedTravel = { ...travel };
+                                        updatedTravel.transport = [...(updatedTravel.transport || []), ...commonTransport];
+                                        updateData('travel', updatedTravel);
+                                    }}>Add Common Transport Options</button>
+                                </div>
                             </div>
                         )}
                     </div>

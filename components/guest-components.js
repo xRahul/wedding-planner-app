@@ -64,6 +64,24 @@ const Guests = ({ guests, updateData, data }) => {
         guests.forEach(g => {
             categories[g.category] = (categories[g.category] || 0) + 1;
         });
+        
+        // Gift tracking stats
+        const giftStats = {
+            giftsReceived: guests.filter(g => g.giftGiven).length,
+            totalGiftAmount: guests.reduce((sum, g) => sum + (g.giftAmount || 0), 0),
+            avgGiftAmount: guests.filter(g => g.giftGiven).length > 0 ? 
+                guests.reduce((sum, g) => sum + (g.giftAmount || 0), 0) / guests.filter(g => g.giftGiven).length : 0
+        };
+        
+        // Transport needs
+        const transportNeeded = guests.reduce((sum, g) => {
+            let count = g.transportNeeded ? 1 : 0;
+            if (g.type === 'family' && g.familyMembers) {
+                count += g.familyMembers.filter(m => m.transportNeeded).length;
+            }
+            return sum + count;
+        }, 0);
+        
         return {
             total: guests.length,
             totalIndividuals,
@@ -77,7 +95,9 @@ const Guests = ({ guests, updateData, data }) => {
             roomsAssigned,
             vegCount,
             nonVegCount,
-            categories
+            categories,
+            giftStats,
+            transportNeeded
         };
     }, [guests]);
 
@@ -87,7 +107,9 @@ const Guests = ({ guests, updateData, data }) => {
                 <button className="btn btn-primary" onClick={() => handleAdd({
                     type: 'single', name: '', category: 'family', side: 'groom', relation: '',
                     phone: '', dietary: 'veg', rsvpStatus: 'pending', aadharCollected: false,
-                    room: '', arrivalDate: '', departureDate: '', notes: '', familyMembers: []
+                    room: '', arrivalDate: '', departureDate: '', notes: '', familyMembers: [],
+                    giftGiven: false, giftAmount: 0, giftDescription: '',
+                    ceremonyParticipation: [], specialNeeds: '', transportNeeded: false
                 })}>Add Guest</button>
             }>
                 <div className="stats-grid">
@@ -137,6 +159,20 @@ const Guests = ({ guests, updateData, data }) => {
                         <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Dietary Preferences</div>
                         <div style={{ fontSize: '18px', fontWeight: 'bold' }}>🥗 {stats.vegCount} | 🍗 {stats.nonVegCount}</div>
                     </div>
+                    <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Gifts Received</div>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.giftStats.giftsReceived} / {stats.total}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                            {formatCurrency(stats.giftStats.totalGiftAmount)} total
+                        </div>
+                    </div>
+                    <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Transport Needed</div>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.transportNeeded}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                            individuals need transport
+                        </div>
+                    </div>
                 </div>
                 {Object.keys(stats.categories).length > 0 && (
                     <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
@@ -150,13 +186,29 @@ const Guests = ({ guests, updateData, data }) => {
                         </div>
                     </div>
                 )}
+                
+                {/* Gift Summary */}
+                {stats.giftStats.giftsReceived > 0 && (
+                    <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>Gift Summary</div>
+                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                            <div><strong>Total Amount:</strong> {formatCurrency(stats.giftStats.totalGiftAmount)}</div>
+                            <div><strong>Average Gift:</strong> {formatCurrency(stats.giftStats.avgGiftAmount)}</div>
+                            <div><strong>Completion:</strong> {Math.round(stats.giftStats.giftsReceived / stats.total * 100)}%</div>
+                        </div>
+                    </div>
+                )}
             </Card>
 
             <Card title={`Guest List (${stats.total} entries, ${stats.totalIndividuals} individuals)`}>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    {['all', 'family', 'friends', 'yes', 'pending'].map(f => (
-                        <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f)}>
-                            {f === 'all' ? 'All' : f === 'yes' ? `Confirmed (${stats.confirmed})` : f === 'pending' ? `Pending (${stats.pending})` : f.charAt(0).toUpperCase() + f.slice(1)}
+                    {['all', 'family', 'friends', 'yes', 'pending', 'transport_needed'].map(f => (
+                        <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f === 'transport_needed' ? (g) => g.transportNeeded || (g.familyMembers && g.familyMembers.some(m => m.transportNeeded)) : f)}>
+                            {f === 'all' ? 'All' : 
+                             f === 'yes' ? `Confirmed (${stats.confirmed})` : 
+                             f === 'pending' ? `Pending (${stats.pending})` : 
+                             f === 'transport_needed' ? `Need Transport (${stats.transportNeeded})` :
+                             f.charAt(0).toUpperCase() + f.slice(1)}
                         </button>
                     ))}
                 </div>

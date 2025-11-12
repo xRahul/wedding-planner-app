@@ -87,7 +87,13 @@ const Gifts = ({ giftsAndFavors, updateData }) => {
                         className={`btn ${activeTab === 'special' ? 'btn-primary' : 'btn-outline'}`}
                         onClick={() => setActiveTab('special')}
                     >
-                        💝 Special Gifts
+                        💝 Special Gifts ({calculateTotals('special').totalItems})
+                    </button>
+                    <button 
+                        className={`btn ${activeTab === 'analytics' ? 'btn-primary' : 'btn-outline'}`}
+                        onClick={() => setActiveTab('analytics')}
+                    >
+                        📊 Analytics
                     </button>
                 </div>
             </div>
@@ -335,6 +341,34 @@ const Gifts = ({ giftsAndFavors, updateData }) => {
                     ) : (
                         <div className="empty-state"><div className="empty-state-icon">💝</div><p>No special gifts added</p></div>
                     )}
+                </div>
+            )}
+
+            {activeTab === 'analytics' && (
+                <div className="card">
+                    <h3>Gift Analytics & North Indian Traditions</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginTop: '16px' }}>
+                        <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)' }}>Traditional Guidelines</h4>
+                            <div style={{ fontSize: '13px', lineHeight: '1.5' }}>
+                                • <strong>Shagun amounts:</strong> ₹51, ₹101, ₹501, ₹1001<br/>
+                                • <strong>Gold coins:</strong> Auspicious for family gifts<br/>
+                                • <strong>Dry fruits:</strong> Traditional return gifts<br/>
+                                • <strong>Silver items:</strong> Considered pure and blessed<br/>
+                                • <strong>Coconut + Supari:</strong> Essential in gift boxes
+                            </div>
+                        </div>
+                        
+                        <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-primary)' }}>Budget Summary</h4>
+                            <div style={{ fontSize: '13px', lineHeight: '1.5' }}>
+                                • Family gifts: {formatCurrency(calculateTotals('family').totalCost)}<br/>
+                                • Return gifts: {formatCurrency(calculateTotals('return').totalCost)}<br/>
+                                • Special gifts: {formatCurrency(calculateTotals('special').totalCost)}<br/>
+                                • Total items: {calculateTotals('family').totalItems + calculateTotals('return').totalItems + calculateTotals('special').totalItems}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

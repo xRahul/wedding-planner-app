@@ -15,25 +15,78 @@ const Tasks = ({ tasks, updateData }) => {
     };
 
     const stats = useMemo(() => {
+        const categories = {};
+        tasks.forEach(t => {
+            const cat = t.category || 'general';
+            if (!categories[cat]) categories[cat] = { total: 0, done: 0, pending: 0 };
+            categories[cat].total++;
+            if (t.status === 'done') categories[cat].done++;
+            else categories[cat].pending++;
+        });
+        
         return {
             total: tasks.length,
             done: tasks.filter(t => t.status === 'done').length,
             pending: tasks.filter(t => t.status === 'pending').length,
-            high: tasks.filter(t => t.priority === 'high' && t.status === 'pending').length
+            high: tasks.filter(t => t.priority === 'high' && t.status === 'pending').length,
+            overdue: tasks.filter(t => t.status === 'pending' && t.deadline && new Date(t.deadline) < new Date()).length,
+            categories
         };
     }, [tasks]);
 
     return (
         <div>
             <Card title={`Tasks Checklist (${stats.done}/${stats.total} completed)`} action={
-                <button className="btn btn-primary" onClick={() => handleAdd({
-                    description: '', deadline: '', assignedTo: '', status: 'pending', priority: 'medium'
-                })}>Add Task</button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn btn-primary" onClick={() => handleAdd({
+                        description: '', deadline: '', assignedTo: '', status: 'pending', priority: 'medium', category: 'general'
+                    })}>Add Task</button>
+                    <button className="btn btn-outline" onClick={() => {
+                        const weddingTasks = [
+                            { description: 'Book Pandit Ji for ceremonies', category: 'vendor', priority: 'high' },
+                            { description: 'Finalize Mehendi artist', category: 'vendor', priority: 'high' },
+                            { description: 'Order wedding cards', category: 'preparation', priority: 'medium' },
+                            { description: 'Book band baja for baraat', category: 'vendor', priority: 'high' },
+                            { description: 'Arrange horse/ghodi for groom', category: 'transport', priority: 'medium' },
+                            { description: 'Buy ritual items (kalash, coconut, etc.)', category: 'shopping', priority: 'high' },
+                            { description: 'Finalize mandap decoration', category: 'decoration', priority: 'medium' },
+                            { description: 'Confirm catering menu', category: 'catering', priority: 'high' }
+                        ];
+                        weddingTasks.forEach(task => {
+                            const newTask = {
+                                ...task,
+                                id: generateId(),
+                                deadline: '',
+                                assignedTo: '',
+                                status: 'pending'
+                            };
+                            const updatedTasks = [...tasks, newTask];
+                            updateData('tasks', updatedTasks);
+                        });
+                    }}>Add Wedding Templates</button>
+                </div>
             }>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-                    {[['all', 'All'], ['pending', `Pending (${stats.pending})`], ['done', `Done (${stats.done})`], ['high', `High Priority (${stats.high})`]].map(([f, label]) => (
-                        <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f)}>{label}</button>
-                    ))}
+                <div style={{ marginTop: '16px' }}>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                        {[['all', 'All'], ['pending', `Pending (${stats.pending})`], ['done', `Done (${stats.done})`], ['high', `High Priority (${stats.high})`], ['overdue', `Overdue (${stats.overdue})`]].map(([f, label]) => (
+                            <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f === 'overdue' ? (t) => t.status === 'pending' && t.deadline && new Date(t.deadline) < new Date() : f)}>{label}</button>
+                        ))}
+                    </div>
+                    {Object.keys(stats.categories).length > 0 && (
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>Progress by Category</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px' }}>
+                                {Object.entries(stats.categories).map(([cat, data]) => (
+                                    <div key={cat} style={{ fontSize: '12px' }}>
+                                        <strong style={{ textTransform: 'capitalize' }}>{cat.replace('_', ' ')}</strong>: {data.done}/{data.total}
+                                        <div className="progress-bar" style={{ height: '4px', marginTop: '2px' }}>
+                                            <div className="progress-fill" style={{ width: `${data.total > 0 ? (data.done / data.total * 100) : 0}%` }}></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </Card>
 

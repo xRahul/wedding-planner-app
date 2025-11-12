@@ -6,8 +6,16 @@ const Vendors = ({ vendors, updateData }) => {
     const { showModal, editing: editingVendor, handleAdd, handleEdit, handleSave, handleDelete, closeModal } = useCRUD(vendors, updateData, 'vendors', validateVendor);
     const [filteredVendors, filter, setFilter] = useFilter(vendors, (v, f) => v.type === f || v.status === f);
 
-    const totalCost = useMemo(() => {
-        return vendors.reduce((sum, v) => sum + (v.finalCost || v.cost || 0), 0);
+    const vendorStats = useMemo(() => {
+        const totalCost = vendors.reduce((sum, v) => sum + (v.finalCost || v.estimatedCost || 0), 0);
+        const advancePaid = vendors.reduce((sum, v) => sum + (v.advancePaid || 0), 0);
+        const pendingPayment = totalCost - advancePaid;
+        const confirmedVendors = vendors.filter(v => v.status === 'confirmed').length;
+        const bookedVendors = vendors.filter(v => v.status === 'booked').length;
+        const avgRating = vendors.filter(v => v.rating > 0).length > 0 ? 
+            vendors.reduce((sum, v) => sum + (v.rating || 0), 0) / vendors.filter(v => v.rating > 0).length : 0;
+        
+        return { totalCost, advancePaid, pendingPayment, confirmedVendors, bookedVendors, avgRating };
     }, [vendors]);
 
     return (
@@ -15,11 +23,33 @@ const Vendors = ({ vendors, updateData }) => {
             <Card title={`Vendors (${vendors.length} total)`} action={
                 <button className="btn btn-primary" onClick={() => handleAdd({
                     type: 'decorator', name: '', contact: '', email: '', estimatedCost: 0,
-                    finalCost: 0, status: 'pending', availability: [], bookedDate: '', notes: ''
+                    finalCost: 0, status: 'pending', availability: [], bookedDate: '', notes: '',
+                    advancePaid: 0, paymentStatus: 'pending', rating: 0, reviews: ''
                 })}>Add Vendor</button>
             }>
-                <div style={{ marginTop: '16px' }}>
-                    <strong>Total Vendor Cost: {formatCurrency(totalCost)}</strong>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '16px' }}>
+                    <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total Cost</div>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatCurrency(vendorStats.totalCost)}</div>
+                    </div>
+                    <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Advance Paid</div>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-success)' }}>{formatCurrency(vendorStats.advancePaid)}</div>
+                    </div>
+                    <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Pending Payment</div>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-warning)' }}>{formatCurrency(vendorStats.pendingPayment)}</div>
+                    </div>
+                    <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Confirmed</div>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{vendorStats.confirmedVendors + vendorStats.bookedVendors}/{vendors.length}</div>
+                    </div>
+                    {vendorStats.avgRating > 0 && (
+                        <div style={{ padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Avg Rating</div>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{'⭐'.repeat(Math.round(vendorStats.avgRating))} {vendorStats.avgRating.toFixed(1)}</div>
+                        </div>
+                    )}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
                     {['all', 'confirmed', 'booked', 'pending'].map(f => (
@@ -102,7 +132,13 @@ const VendorModal = ({ vendor, onSave, onClose }) => {
         'band_baja', 'dhol_players', 'light_setup',
         'wedding_planner', 'invitation_cards', 'transport',
         'tent_house', 'sound_system', 'fireworks',
-        'stage_setup', 'varmala_setup', 'luxury_car_rental'
+        'stage_setup', 'varmala_setup', 'luxury_car_rental',
+        'astrologer', 'priest_assistant', 'havan_materials',
+        'mandap_decorator', 'horse_ghodi', 'baggi_decoration',
+        'sehra_bandi', 'kalash_decoration', 'coconut_supplier',
+        'paan_counter', 'live_counter_chef', 'ice_cream_counter',
+        'security_service', 'valet_parking', 'generator_rental',
+        'ac_cooler_rental', 'crockery_cutlery', 'linen_rental'
     ];
     const [vendorTypes, setVendorTypes] = useState(defaultVendorTypes);
 
