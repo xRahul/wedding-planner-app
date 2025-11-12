@@ -167,18 +167,24 @@ const useCRUD = (items, updateData, dataKey, validator) => {
     };
 
     const handleSave = (item) => {
-        if (validator) {
-            const errors = validator(item);
-            if (errors) {
-                alert(`Please fix:\n${Object.entries(errors).map(([k, v]) => `${k}: ${v}`).join('\n')}`);
-                return;
+        try {
+            if (validator) {
+                const errors = validator(item);
+                if (errors) {
+                    const errorMsg = Object.entries(errors).map(([k, v]) => `• ${k}: ${v}`).join('\n');
+                    alert(`Please fix the following errors:\n\n${errorMsg}`);
+                    return;
+                }
             }
+            const idx = items.findIndex(i => i.id === item.id);
+            const updated = idx >= 0 ? [...items.slice(0, idx), item, ...items.slice(idx + 1)] : [...items, item];
+            updateData(dataKey, updated);
+            setShowModal(false);
+            setEditing(null);
+        } catch (error) {
+            console.error('Save failed:', error);
+            alert('Failed to save. Please try again.');
         }
-        const idx = items.findIndex(i => i.id === item.id);
-        const updated = idx >= 0 ? [...items.slice(0, idx), item, ...items.slice(idx + 1)] : [...items, item];
-        updateData(dataKey, updated);
-        setShowModal(false);
-        setEditing(null);
     };
 
     const handleDelete = (id) => {

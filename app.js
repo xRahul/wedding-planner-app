@@ -42,6 +42,7 @@ const WeddingPlannerApp = () => {
     const updateData = (key, value) => {
         try {
             if (!key) throw new Error('Invalid key');
+            if (value === undefined) throw new Error('Invalid value');
             const newData = { ...data, [key]: value };
             setData(newData);
             setError(null);
@@ -63,15 +64,15 @@ const WeddingPlannerApp = () => {
         <div>
             <Header weddingInfo={data.weddingInfo} />
             {error && (
-                <div className="error-banner">
+                <div className="error-banner" role="alert">
                     <div className="error-message">
                         <span>⚠️ {error}</span>
-                        <button className="btn btn-small" onClick={() => setError(null)}>&times;</button>
+                        <button className="btn btn-small" onClick={() => setError(null)} aria-label="Dismiss error">&times;</button>
                     </div>
                 </div>
             )}
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-            <div className="container">
+            <main id="main-content" className="container">
                 {activeTab === 'dashboard' && <Dashboard data={data} />}
                 {activeTab === 'timeline' && <Timeline timeline={data.timeline} updateData={updateData} weddingDate={data.weddingInfo.weddingDate} />}
                 {activeTab === 'guests' && <Guests guests={data.guests} updateData={updateData} data={data} />}
@@ -84,7 +85,7 @@ const WeddingPlannerApp = () => {
                 {activeTab === 'gifts' && <Gifts giftsAndFavors={data.giftsAndFavors} updateData={updateData} />}
                 {activeTab === 'travel' && <Travel travel={data.travel} updateData={updateData} />}
                 {activeTab === 'settings' && <Settings weddingInfo={data.weddingInfo} updateData={updateData} allData={data} setData={setData} />}
-            </div>
+            </main>
         </div>
     );
 };
@@ -92,4 +93,8 @@ const WeddingPlannerApp = () => {
 // ==================== RENDER APP ====================
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<WeddingPlannerApp />);
+root.render(
+    <ErrorBoundary onReset={() => window.location.reload()}>
+        <WeddingPlannerApp />
+    </ErrorBoundary>
+);

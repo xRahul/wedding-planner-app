@@ -202,12 +202,11 @@ const Guests = ({ guests, updateData, data }) => {
 
             <Card title={`Guest List (${stats.total} entries, ${stats.totalIndividuals} individuals)`}>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    {['all', 'family', 'friends', 'yes', 'pending', 'transport_needed'].map(f => (
-                        <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f === 'transport_needed' ? (g) => g.transportNeeded || (g.familyMembers && g.familyMembers.some(m => m.transportNeeded)) : f)}>
+                    {['all', 'family', 'friends', 'yes', 'pending'].map(f => (
+                        <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f)}>
                             {f === 'all' ? 'All' : 
                              f === 'yes' ? `Confirmed (${stats.confirmed})` : 
                              f === 'pending' ? `Pending (${stats.pending})` : 
-                             f === 'transport_needed' ? `Need Transport (${stats.transportNeeded})` :
                              f.charAt(0).toUpperCase() + f.slice(1)}
                         </button>
                     ))}

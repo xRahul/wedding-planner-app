@@ -4,7 +4,7 @@ A comprehensive Progressive Web App (PWA) for planning North Indian weddings wit
 
 ## 🎯 Overview
 
-This is a full-featured wedding planning application built with React 18 (via CDN), designed specifically for North Indian weddings. It runs entirely in the browser with local storage and optional Neon Postgres database sync.
+This is a full-featured wedding planning application built with React 18 (via CDN), designed specifically for North Indian weddings. It runs entirely in the browser with local storage.
 
 ## ✨ Key Features
 
@@ -108,7 +108,7 @@ This is a full-featured wedding planning application built with React 18 (via CD
 ### Technology Stack
 - **Frontend**: React 18 (via CDN)
 - **Transpiler**: Babel Standalone (for JSX in browser)
-- **Storage**: LocalStorage + Optional Neon Postgres
+- **Storage**: LocalStorage
 - **PWA**: Service Worker for offline functionality
 - **Styling**: Custom CSS with CSS variables
 
@@ -118,14 +118,12 @@ This is a full-featured wedding planning application built with React 18 (via CD
 wedding-planner-app/
 ├── index.html                          # Entry point with script loading order
 ├── app.js                              # Main app component and routing
-├── db.js                               # Neon Postgres database integration
 ├── storage.js                          # LocalStorage manager
 ├── utils.js                            # Utilities, validators, data structure
 ├── styles.css                          # Global styles
 ├── pwa.js                              # Service worker registration
 ├── service-worker.js                   # PWA service worker
 ├── manifest.json                       # PWA manifest
-├── env.js                              # Environment configuration
 ├── components/
 │   ├── shared-components-bundle.js     # Shared UI components and hooks
 │   ├── header-component.js             # Header with countdown
@@ -149,8 +147,8 @@ wedding-planner-app/
 
 The app loads scripts in a specific order to ensure dependencies are available:
 
-1. **env.js** - Environment configuration
-2. **db.js** - Database layer
+1. **utils/security.js** - Security utilities
+2. **components/error-boundary.js** - Error handling
 3. **storage.js** - Storage layer
 4. **utils.js** - Utilities and data structure
 5. **shared-components-bundle.js** - Shared components and hooks
@@ -185,7 +183,7 @@ The app loads scripts in a specific order to ensure dependencies are available:
 
 ### Data Structure
 
-The app uses a single data object stored in localStorage and optionally synced to Neon Postgres:
+The app uses a single data object stored in localStorage:
 
 ```javascript
 {
@@ -234,19 +232,12 @@ The app uses a single data object stored in localStorage and optionally synced t
 
 ### Storage Strategy
 
-**Dual Storage System:**
-1. **LocalStorage** (Primary): Immediate persistence, works offline
-2. **Neon Postgres** (Optional): Cloud sync when configured
-
-**Auto-save**: Data saves automatically on every change
-
-**Error Handling**: Falls back to localStorage if database fails
+**LocalStorage**: All data is stored locally in the browser with automatic persistence on every change. Works completely offline.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Modern web browser (Chrome, Firefox, Safari, Edge)
-- Optional: Neon Postgres database for cloud sync
 
 ### Installation
 
@@ -263,22 +254,6 @@ The app uses a single data object stored in localStorage and optionally synced t
    php -S localhost:8000
    ```
 3. Open `http://localhost:8000` in your browser
-
-### Configuration
-
-**Optional Database Setup:**
-
-Create `.env.example` file:
-```javascript
-window.ENV = {
-  NEON_DB_HOST: 'your-project.neon.tech',
-  NEON_DB_NAME: 'wedding_planner',
-  NEON_DB_USER: 'your-username',
-  NEON_DB_PASSWORD: 'your-password'
-};
-```
-
-Copy to `env.js` and update with your credentials.
 
 ### PWA Installation
 
@@ -356,14 +331,46 @@ The app can be installed as a Progressive Web App:
 ### Backup Strategy
 - Regular exports recommended
 - Data persists in localStorage
-- Optional cloud sync with Neon Postgres
 
 ## 🔒 Security & Privacy
 
+### Security Features
+- **Input Sanitization**: All user inputs sanitized to prevent XSS attacks
+- **Data Encryption**: Sensitive fields (phone, email, Aadhar) encrypted using AES-GCM 256-bit
+- **Content Security Policy**: Restricts resource loading to trusted sources
+- **Enhanced Validation**: Phone, email, name validation with security checks
+- **Error Boundary**: Graceful error handling prevents app crashes
+
+### Privacy
 - All data stored locally in browser
 - No external tracking or analytics
-- Optional database sync requires explicit configuration
-- Export data for external backups
+- No data sent to external servers
+- User controls all data (export/delete)
+
+### Security Utilities
+```javascript
+// Available globally via window.securityUtils
+window.securityUtils.sanitizeInput(userInput);
+window.securityUtils.isValidEmail(email);
+window.securityUtils.encryptGuestData(guest);
+```
+
+## ♿ Accessibility
+
+### WCAG 2.1 Level AA Compliant
+- **Keyboard Navigation**: Full Tab/Shift+Tab support, visible focus indicators
+- **Screen Reader**: Compatible with NVDA, JAWS, VoiceOver, TalkBack
+- **Skip Link**: Jump to main content (Tab from page load)
+- **ARIA Labels**: All interactive elements properly labeled
+- **Touch Targets**: Minimum 44x44px for mobile
+- **Reduced Motion**: Respects prefers-reduced-motion setting
+- **Color Contrast**: Meets WCAG AA standards (4.5:1)
+
+### Keyboard Shortcuts
+- **Tab**: Navigate forward
+- **Shift+Tab**: Navigate backward
+- **Enter**: Activate buttons/submit forms
+- **Escape**: Close modals
 
 ## 🌐 Browser Support
 
@@ -379,6 +386,14 @@ The app can be installed as a Progressive Web App:
 - **Custom Hooks**: 3 shared hooks
 - **Code Reuse**: ~170 lines eliminated through shared components
 - **Reduction**: ~15% code reduction with improved maintainability
+
+## 🔧 Recent Improvements (v2.1)
+
+- **Service Worker**: Fixed cache URLs for proper offline functionality
+- **Validation**: Enhanced all validators with comprehensive checks and error handling
+- **Error Prevention**: Added division-by-zero guards in dashboard calculations
+- **Data Integrity**: Improved async storage operations and error handling
+- **User Experience**: Better error messages and edge case handling
 
 ## 🛠️ Development
 
@@ -409,16 +424,22 @@ const MyComponent = ({ data, updateData }) => {
 - Check browser console for errors
 - Verify localStorage is enabled
 - Check storage quota
-
-**Database sync failing:**
-- Verify env.js configuration
-- Check network connectivity
-- Confirm database credentials
+- Try exporting data as backup
 
 **PWA not installing:**
 - Ensure HTTPS or localhost
 - Check manifest.json is accessible
 - Verify service worker registration
+- Clear browser cache and retry
+
+**Dashboard showing errors:**
+- Ensure wedding date is set in Settings
+- Verify total budget is greater than 0
+- Check that all required fields are filled
+
+## 📚 Additional Documentation
+
+- [AI_CONTEXT.md](AI_CONTEXT.md) - Comprehensive technical documentation for AI assistants and developers
 
 ## 📄 License
 

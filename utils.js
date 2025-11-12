@@ -107,6 +107,13 @@ const saveData = async (data) => {
 
 // ==================== VALIDATION FUNCTIONS ====================
 
+/**
+ * Validates wedding information
+ * @param {Object} info - Wedding info object
+ * @param {string} info.brideName - Bride's name
+ * @param {string} info.groomName - Groom's name
+ * @returns {Object|null} Validation errors or null if valid
+ */
 const validateWeddingInfo = (info) => {
     const errors = {};
     if (!info.brideName?.trim()) errors.brideName = 'Bride name is required';
@@ -114,15 +121,23 @@ const validateWeddingInfo = (info) => {
     return Object.keys(errors).length ? errors : null;
 };
 
+/**
+ * Validates guest data with security checks
+ * @param {Object} guest - Guest object
+ * @returns {Object|null} Validation errors or null if valid
+ */
 const validateGuest = (guest) => {
     try {
         if (!guest || typeof guest !== 'object') return { error: 'Invalid guest data' };
         const errors = {};
         if (!guest.name?.trim()) errors.name = 'Name is required';
+        else if (guest.name.length > 100) errors.name = 'Name too long (max 100 characters)';
         if (!guest.category) errors.category = 'Category is required';
         if (!guest.side) errors.side = 'Bride/Groom side must be specified';
         if (!guest.relation) errors.relation = 'Relation is required';
-        if (guest.phone && !/^[\d\s+()-]+$/.test(guest.phone)) errors.phone = 'Invalid phone number';
+        if (guest.phone && !window.securityUtils?.isValidPhone(guest.phone)) errors.phone = 'Invalid phone number';
+        if (guest.email && !window.securityUtils?.isValidEmail(guest.email)) errors.email = 'Invalid email';
+        if (guest.giftAmount && !window.securityUtils?.isValidNumber(guest.giftAmount)) errors.giftAmount = 'Invalid gift amount';
         return Object.keys(errors).length ? errors : null;
     } catch (error) {
         console.error('Validation error:', error);
@@ -140,41 +155,95 @@ const isValidDate = (dateString) => {
     }
 };
 
+/**
+ * Validates vendor data
+ * @param {Object} vendor - Vendor object
+ * @returns {Object|null} Validation errors or null if valid
+ */
 const validateVendor = (vendor) => {
-    const errors = {};
-    if (!vendor.name?.trim()) errors.name = 'Name is required';
-    if (!vendor.type) errors.type = 'Vendor type is required';
-    if (vendor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vendor.email)) errors.email = 'Invalid email';
-    return Object.keys(errors).length ? errors : null;
+    try {
+        if (!vendor || typeof vendor !== 'object') return { error: 'Invalid vendor data' };
+        const errors = {};
+        if (!vendor.name?.trim()) errors.name = 'Name is required';
+        else if (vendor.name.length > 100) errors.name = 'Name too long (max 100 characters)';
+        if (!vendor.type) errors.type = 'Vendor type is required';
+        if (vendor.email && !window.securityUtils?.isValidEmail(vendor.email)) errors.email = 'Invalid email';
+        if (vendor.phone && !window.securityUtils?.isValidPhone(vendor.phone)) errors.phone = 'Invalid phone';
+        if (vendor.estimatedCost && !window.securityUtils?.isValidNumber(vendor.estimatedCost)) errors.estimatedCost = 'Invalid cost';
+        if (vendor.finalCost && !window.securityUtils?.isValidNumber(vendor.finalCost)) errors.finalCost = 'Invalid cost';
+        if (vendor.advancePaid && !window.securityUtils?.isValidNumber(vendor.advancePaid)) errors.advancePaid = 'Invalid amount';
+        return Object.keys(errors).length ? errors : null;
+    } catch (error) {
+        console.error('Validation error:', error);
+        return { error: 'Validation failed' };
+    }
 };
 
 const validateTimelineEvent = (event) => {
-    const errors = {};
-    if (!event.ceremony?.trim()) errors.ceremony = 'Ceremony name is required';
-    return Object.keys(errors).length ? errors : null;
+    try {
+        if (!event || typeof event !== 'object') return { error: 'Invalid event data' };
+        const errors = {};
+        if (!event.ceremony?.trim()) errors.ceremony = 'Ceremony name is required';
+        else if (event.ceremony.length > 100) errors.ceremony = 'Ceremony name too long';
+        if (event.date && !isValidDate(event.date)) errors.date = 'Invalid date';
+        return Object.keys(errors).length ? errors : null;
+    } catch (error) {
+        console.error('Validation error:', error);
+        return { error: 'Validation failed' };
+    }
 };
 
 const validateMenuItem = (item) => {
-    const errors = {};
-    if (!item.name?.trim()) errors.name = 'Item name is required';
-    return Object.keys(errors).length ? errors : null;
+    try {
+        if (!item || typeof item !== 'object') return { error: 'Invalid menu item data' };
+        const errors = {};
+        if (!item.name?.trim()) errors.name = 'Item name is required';
+        else if (item.name.length > 100) errors.name = 'Item name too long';
+        if (item.cost && !window.securityUtils?.isValidNumber(item.cost)) errors.cost = 'Invalid cost';
+        return Object.keys(errors).length ? errors : null;
+    } catch (error) {
+        console.error('Validation error:', error);
+        return { error: 'Validation failed' };
+    }
 };
 
 const validateTravelItem = (item) => {
-    const errors = {};
-    if (!item.vehicleType?.trim()) errors.vehicleType = 'Vehicle type is required';
-    if (!item.fromDate) errors.fromDate = 'From date is required';
-    if (!item.toDate) errors.toDate = 'To date is required';
-    if (!item.seats || item.seats <= 0) errors.seats = 'Valid number of seats is required';
-    return Object.keys(errors).length ? errors : null;
+    try {
+        if (!item || typeof item !== 'object') return { error: 'Invalid travel item data' };
+        const errors = {};
+        if (!item.vehicleType?.trim()) errors.vehicleType = 'Vehicle type is required';
+        if (!item.fromDate) errors.fromDate = 'From date is required';
+        else if (!isValidDate(item.fromDate)) errors.fromDate = 'Invalid from date';
+        if (!item.toDate) errors.toDate = 'To date is required';
+        else if (!isValidDate(item.toDate)) errors.toDate = 'Invalid to date';
+        if (item.fromDate && item.toDate && new Date(item.fromDate) > new Date(item.toDate)) {
+            errors.toDate = 'To date must be after from date';
+        }
+        if (!item.seats || item.seats <= 0) errors.seats = 'Valid number of seats is required';
+        if (item.totalPrice && !window.securityUtils?.isValidNumber(item.totalPrice)) errors.totalPrice = 'Invalid price';
+        return Object.keys(errors).length ? errors : null;
+    } catch (error) {
+        console.error('Validation error:', error);
+        return { error: 'Validation failed' };
+    }
 };
 
 // ==================== UTILITY FUNCTIONS ====================
 
+/**
+ * Generates unique ID for data objects
+ * @returns {string} Unique identifier
+ */
 const generateId = () => {
     return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 };
 
+/**
+ * Formats date string for display
+ * @param {string} dateString - ISO date string
+ * @param {boolean} withTime - Include time in output
+ * @returns {string} Formatted date string
+ */
 const formatDate = (dateString, withTime = false) => {
     try {
         if (!dateString) return '';
@@ -204,6 +273,11 @@ const isDatePassed = (dateString) => {
     return date < today;
 };
 
+/**
+ * Formats number as Indian currency
+ * @param {number} amount - Amount to format
+ * @returns {string} Formatted currency string
+ */
 const formatCurrency = (amount) => {
     try {
         const num = Number(amount);

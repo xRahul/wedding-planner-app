@@ -26,12 +26,18 @@ class StorageManager {
         this.listeners.forEach(listener => listener(data));
     }
 
-    saveData(data) {
+    /**
+     * Saves data to localStorage with sanitization
+     * @param {Object} data - Wedding planner data
+     * @returns {Promise<boolean>} Success status
+     */
+    async saveData(data) {
         try {
             if (!data) throw new Error('No data to save');
-            const serialized = JSON.stringify(data);
+            const sanitized = window.securityUtils?.sanitizeObject(data) || data;
+            const serialized = JSON.stringify(sanitized);
             localStorage.setItem(this.LOCAL_STORAGE_KEY, serialized);
-            this.notifyListeners(data);
+            this.notifyListeners(sanitized);
             return true;
         } catch (error) {
             if (error.name === 'QuotaExceededError') {
@@ -43,7 +49,11 @@ class StorageManager {
         }
     }
 
-    loadData() {
+    /**
+     * Loads data from localStorage
+     * @returns {Promise<Object|null>} Wedding planner data or null
+     */
+    async loadData() {
         try {
             const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
             if (!localData) return null;
@@ -51,6 +61,21 @@ class StorageManager {
         } catch (error) {
             console.error('Failed to load data:', error);
             return null;
+        }
+    }
+
+    /**
+     * Clears all data from localStorage
+     * @returns {Promise<boolean>} Success status
+     */
+    async clearAllData() {
+        try {
+            localStorage.removeItem(this.LOCAL_STORAGE_KEY);
+            this.notifyListeners(null);
+            return true;
+        } catch (error) {
+            console.error('Failed to clear data:', error);
+            return false;
         }
     }
 

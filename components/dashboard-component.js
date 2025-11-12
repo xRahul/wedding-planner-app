@@ -15,11 +15,11 @@ const Dashboard = ({ data }) => {
             }
             return sum;
         }, 0);
-        const totalBudgetSpent = data.budget.reduce((sum, cat) => sum + cat.actual, 0);
+        const totalBudgetSpent = data.budget.reduce((sum, cat) => sum + (cat.actual || 0), 0);
         const pendingTasks = data.tasks.filter(t => t.status === 'pending').length;
         const highPriorityTasks = data.tasks.filter(t => t.status === 'pending' && t.priority === 'high').length;
-        const daysUntilWedding = Math.ceil((new Date(data.weddingInfo.weddingDate) - new Date()) / (1000 * 60 * 60 * 24));
-        const budgetPercentage = (totalBudgetSpent / data.weddingInfo.totalBudget * 100).toFixed(1);
+        const daysUntilWedding = data.weddingInfo.weddingDate ? Math.ceil((new Date(data.weddingInfo.weddingDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+        const budgetPercentage = data.weddingInfo.totalBudget > 0 ? (totalBudgetSpent / data.weddingInfo.totalBudget * 100).toFixed(1) : '0.0';
         
         // North Indian wedding specific stats
         const ritualStats = {
@@ -66,7 +66,7 @@ const Dashboard = ({ data }) => {
     if (stats.vendorStats.confirmed < stats.vendorStats.total * 0.7) {
         alerts.push({ type: 'info', message: `Only ${stats.vendorStats.confirmed}/${stats.vendorStats.total} vendors confirmed - follow up needed` });
     }
-    if (stats.confirmedIndividuals < stats.totalIndividuals * 0.5 && stats.daysUntilWedding <= 14) {
+    if (stats.totalIndividuals > 0 && stats.confirmedIndividuals < stats.totalIndividuals * 0.5 && stats.daysUntilWedding > 0 && stats.daysUntilWedding <= 14) {
         alerts.push({ type: 'warning', message: `Only ${Math.round(stats.confirmedIndividuals/stats.totalIndividuals*100)}% guests confirmed with 2 weeks left` });
     }
 
@@ -239,8 +239,8 @@ const Dashboard = ({ data }) => {
                         <h4 style={{ margin: '0 0 12px 0', color: 'var(--color-success)' }}>💡 Smart Insights</h4>
                         <div style={{ fontSize: '14px' }}>
                             • Average cost per guest: {formatCurrency(stats.totalIndividuals > 0 ? stats.totalBudgetSpent / stats.totalIndividuals : 0)}<br/>
-                            • Vendor cost: {((stats.vendorStats.totalCost / stats.totalBudgetSpent) * 100).toFixed(1)}% of budget<br/>
-                            • Gift cost: {((stats.giftStats.totalGiftCost / stats.totalBudgetSpent) * 100).toFixed(1)}% of budget<br/>
+                            • Vendor cost: {stats.totalBudgetSpent > 0 ? ((stats.vendorStats.totalCost / stats.totalBudgetSpent) * 100).toFixed(1) : '0.0'}% of budget<br/>
+                            • Gift cost: {stats.totalBudgetSpent > 0 ? ((stats.giftStats.totalGiftCost / stats.totalBudgetSpent) * 100).toFixed(1) : '0.0'}% of budget<br/>
                             • Transport per person: {formatCurrency(stats.confirmedIndividuals > 0 ? stats.transportStats.transportCost / stats.confirmedIndividuals : 0)}
                         </div>
                     </div>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4a90e2">
     <meta name="description" content="Complete Wedding Planning Solution">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="WedPlan">
@@ -22,12 +23,14 @@
     <script src="https://unpkg.com/@babel/standalone@7.23.2/babel.min.js"></script>
     
     <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/styles/accessibility.css">
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <div id="root"></div>
 
-    <script src="/env.js" onerror="window.ENV={}"></script>
-    <script defer type="text/babel" src="/db.js"></script>
+    <script defer type="text/babel" src="/utils/security.js"></script>
+    <script defer type="text/babel" src="/components/error-boundary.js"></script>
     <script defer type="text/babel" src="/storage.js"></script>
     <script defer type="text/babel" src="/utils.js"></script>
     <script defer type="text/babel" src="/components/shared-components-bundle.js"></script>

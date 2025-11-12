@@ -4,7 +4,7 @@ This document provides comprehensive context for AI assistants (LLMs) to underst
 
 ## 🎯 Project Purpose
 
-A Progressive Web App for planning North Indian weddings with comprehensive features for guest management, vendor coordination, budget tracking, ritual planning, and more. Built with React 18 via CDN, runs entirely in browser with localStorage and optional Neon Postgres sync.
+A Progressive Web App for planning North Indian weddings with comprehensive features for guest management, vendor coordination, budget tracking, ritual planning, and more. Built with React 18 via CDN, runs entirely in browser with localStorage.
 
 ## 🏗️ Architecture Overview
 
@@ -12,7 +12,7 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
 - **React 18.2.0** - Loaded via CDN (production build)
 - **Babel Standalone 7.23.2** - JSX transpilation in browser
 - **No Build System** - Direct script loading, no webpack/vite
-- **Storage**: LocalStorage (primary) + Neon Postgres (optional)
+- **Storage**: LocalStorage
 - **PWA**: Service Worker for offline capability
 
 ### Critical Design Decisions
@@ -20,8 +20,7 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
 1. **No Build Step**: All React code uses `type="text/babel"` and transpiles in browser
 2. **Script Order Matters**: Dependencies must load before dependents (see index.html)
 3. **Global State**: Single data object passed down via props (no Redux/Context)
-4. **Auto-save**: Every data change triggers save to localStorage and database
-5. **Dual Storage**: LocalStorage for immediate persistence, Postgres for cloud sync
+4. **Auto-save**: Every data change triggers save to localStorage
 
 ## 📁 File Structure & Responsibilities
 
@@ -52,12 +51,6 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
 - LocalStorage operations
 - Change listeners for data sync
 - Error handling for quota exceeded
-
-**db.js**
-- `DatabaseManager` singleton class
-- Neon Postgres integration via HTTP API
-- Fallback to localStorage on failure
-- Optional - app works without database
 
 **styles.css**
 - CSS variables for theming
@@ -131,7 +124,6 @@ A Progressive Web App for planning North Indian weddings with comprehensive feat
 2. `updateData(key, value)` function passed to all components
 3. Components call `updateData('guests', newGuestsArray)` to update
 4. App.js triggers save on every data change
-5. Save goes to both localStorage and database
 
 ### CRUD Pattern (via useCRUD hook)
 ```javascript
@@ -284,6 +276,13 @@ const DEFAULT_DATA = {
 - shared-components-bundle.js MUST load before feature components
 - app.js MUST load last
 
+### Service Worker Not Caching (v2.1 Fix)
+**Problem**: PWA doesn't work offline
+**Solution**: Service worker cache updated to v2 with correct file paths
+- Clear browser cache and reinstall PWA
+- Check console for cache errors
+- All component files now properly cached
+
 ### State Updates Not Saving
 **Problem**: UI updates but data doesn't persist
 **Solution**: Ensure `updateData(key, value)` is called with correct key
@@ -390,26 +389,79 @@ window.storageManager.loadData(); // Returns current data
 ### Data Size Management
 - LocalStorage limit: ~5-10MB
 - Export data regularly for backup
-- Consider pagination for large lists (future enhancement)
+- All storage operations are async (v2.1)
+- Automatic error handling for quota exceeded
 
 ### Rendering Performance
 - React production build via CDN
 - Minimal re-renders (props comparison)
 - Efficient list rendering with keys
+- Division-by-zero guards prevent NaN displays (v2.1)
+- Null checks prevent crashes with incomplete data (v2.1)
 
-## 🔐 Security Considerations
+## 🔐 Security Implementation
+
+### Security Features
+
+**Input Sanitization** (`/utils/security.js`)
+- `sanitizeInput()` - Escapes HTML to prevent XSS
+- `sanitizeObject()` - Recursively sanitizes objects
+- Integrated into storage.js saveData()
+
+**Data Encryption** (`/utils/security.js`)
+- Web Crypto API (AES-GCM 256-bit)
+- `encryptGuestData()` / `decryptGuestData()`
+- Encrypts: phone, email, Aadhar
+- PBKDF2 key derivation (100,000 iterations)
+
+**Content Security Policy** (`index.html`)
+```
+default-src 'self';
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com;
+style-src 'self' 'unsafe-inline';
+img-src 'self' data:;
+connect-src 'self';
+```
+
+**Validation Functions** (`/utils/security.js`)
+- `isValidPhone()` - Phone format validation (10+ digits)
+- `isValidEmail()` - RFC 5322 email validation
+- `isValidName()` - Alphanumeric + safe chars (max 100)
+- `isValidNumber()` - Strict numeric validation
+
+**Enhanced Validators** (`/utils.js` - v2.1)
+- All validators wrapped in try-catch for error handling
+- Length validation enforced (100 char max for names)
+- Numeric validation for all monetary fields
+- Date range validation for travel items
+- Null/undefined checks before operations
+
+**Error Boundary** (`/components/error-boundary.js`)
+- Catches React errors
+- User-friendly error display
+- Recovery option
+
+### Usage Examples
+```javascript
+// Sanitize input
+const safe = window.securityUtils.sanitizeInput(userInput);
+
+// Validate
+if (!window.securityUtils.isValidEmail(email)) {
+  setError('Invalid email');
+}
+
+// Encrypt sensitive data
+const encrypted = await window.securityUtils.encryptGuestData(guest);
+```
 
 ### Data Privacy
 - All data stored locally in browser
-- No external API calls (except optional database)
+- No external API calls
 - No tracking or analytics
 - User controls all data
 
-### Database Security
-- Optional Neon Postgres uses HTTPS
-- Credentials in env.js (not committed)
-- Basic auth with username/password
-- Fallback to localStorage on failure
+
 
 ## 📦 Deployment
 
@@ -449,6 +501,90 @@ window.storageManager.loadData(); // Returns current data
 - Real-time collaboration
 - Mobile app (React Native)
 
+## ♿ Accessibility Implementation
+
+### Features
+
+**Keyboard Navigation** (`/styles/accessibility.css`)
+- Visible focus indicators (2px solid #4F46E5)
+- Applied to all interactive elements
+- No outline for mouse users (`:focus:not(:focus-visible)`)
+
+**Skip Link** (`index.html`, `/styles/accessibility.css`)
+- "Skip to main content" for keyboard users
+- Hidden by default, visible on focus
+- Jumps to `#main-content`
+
+**ARIA Labels** (`app.js`)
+- `role="alert"` on error messages
+- `aria-label` on icon buttons
+- Semantic `<main>` landmark
+
+**Screen Reader Support** (`/styles/accessibility.css`)
+- `.sr-only` class for screen reader only content
+- ARIA live regions for alerts
+- Semantic HTML structure
+
+**Reduced Motion** (`/styles/accessibility.css`)
+```css
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+```
+
+**Touch Targets** (`/styles/accessibility.css`)
+- Minimum 44x44px for buttons/links
+- Adequate spacing between elements
+
+### Testing
+- **Keyboard**: Tab through all elements, verify focus visible
+- **Screen Reader**: Test with NVDA/VoiceOver
+- **Lighthouse**: Target 90+ accessibility score
+- **axe DevTools**: 0 violations target
+
+## 🔧 Testing & Debugging
+
+### Security Testing
+```javascript
+// Test sanitization
+const malicious = '<script>alert("test")</script>';
+const safe = window.securityUtils.sanitizeInput(malicious);
+console.log(safe); // &lt;script&gt;alert("test")&lt;/script&gt;
+
+// Test encryption
+const data = { phone: '9876543210' };
+window.securityUtils.encryptGuestData(data).then(encrypted => {
+  console.log('Encrypted:', encrypted);
+  return window.securityUtils.decryptGuestData(encrypted);
+}).then(decrypted => {
+  console.log('Decrypted:', decrypted);
+});
+
+// Test validation
+console.log(window.securityUtils.isValidEmail('test@example.com')); // true
+```
+
+### Accessibility Testing
+```javascript
+// Check focus
+document.activeElement; // Currently focused element
+
+// Check ARIA
+element.getAttribute('aria-label');
+element.getAttribute('role');
+
+// Monitor focus changes
+document.addEventListener('focusin', (e) => {
+  console.log('Focused:', e.target);
+});
+```
+
+### Manual Testing
+- **Keyboard**: Unplug mouse, Tab through interface
+- **Screen Reader**: Enable NVDA/VoiceOver, navigate page
+- **Lighthouse**: Run audit in DevTools
+- **axe DevTools**: Install extension, scan page
+
 ## 📞 Getting Help
 
 ### When Asking for Help
@@ -462,15 +598,49 @@ window.storageManager.loadData(); // Returns current data
 **Q: How do I add a new field to guests?**
 A: Update DEFAULT_DATA in utils.js, add to GuestModal form, update table display
 
-**Q: How do I change the color scheme?**
-A: Edit CSS variables in styles.css (--color-primary, etc.)
+**Q: How do I use security utilities?**
+A: Access via `window.securityUtils` - sanitize inputs, validate data, encrypt sensitive fields
 
-**Q: How do I add a new vendor type?**
-A: Use "Add New" in vendor modal, or add to defaultVendorTypes array
+**Q: How do I test accessibility?**
+A: Use keyboard only (Tab navigation), test with screen reader, run Lighthouse audit
 
 **Q: How do I export data programmatically?**
 A: Use `window.storageManager.loadData()` to get data object
 
+## 📚 Version History
+
+### v2.1.0 (2024) - Stability & Validation Update
+- Fixed service worker cache URLs (v1→v2) for proper offline functionality
+- Enhanced all validators with comprehensive error handling and try-catch blocks
+- Added division-by-zero guards in dashboard calculations
+- Improved async storage operations with proper Promise handling
+- Better error messages with bullet-point formatting
+- Added length validation (max 100 chars) for text fields
+- Added numeric validation for all monetary fields using security utils
+- Fixed guest filter logic bug
+- Added null/undefined checks throughout codebase
+- Added date range validation for travel items
+
+### v2.0.0 (2024) - Security & Accessibility Update
+- Added input sanitization (XSS prevention)
+- Added data encryption (AES-GCM 256-bit)
+- Added Content Security Policy
+- Added enhanced validation
+- Added Error Boundary component
+- Added keyboard navigation support
+- Added screen reader compatibility
+- Added WCAG 2.1 AA compliance
+- Added comprehensive JSDoc comments
+- Removed Postgres/Neon.tech integration
+
+### v1.0.0 - Initial Release
+- Core wedding planning features
+- Guest, vendor, budget, task management
+- Rituals, menu, gifts, shopping, travel
+- Dashboard with analytics
+- PWA with offline support
+- LocalStorage persistence
+
 ---
 
-**This document should be provided to AI assistants when working with this codebase for optimal understanding and code generation.**
+**This document provides comprehensive context for AI assistants and developers working with this codebase.**
