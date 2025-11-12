@@ -1,0 +1,256 @@
+const { useState, useEffect, useMemo } = React;
+
+        // ==================== SETTINGS COMPONENT ====================
+
+        const Settings = ({ weddingInfo, updateData, allData, setData }) => {
+            const [editMode, setEditMode] = useState(false);
+            const [formData, setFormData] = useState(weddingInfo);
+
+
+
+            const [formErrors, setFormErrors] = useState({});
+
+            const handleSave = () => {
+                const errors = validateWeddingInfo(formData);
+                if (errors) {
+                    setFormErrors(errors);
+                    return;
+                }
+                updateData('weddingInfo', formData);
+                setEditMode(false);
+                setFormErrors({});
+            };
+
+            const handleExport = () => {
+                try {
+                    if (!allData || typeof allData !== 'object') {
+                        alert('No data available to export.');
+                        return;
+                    }
+
+                    const dataStr = JSON.stringify(allData, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `wedding-planner-backup-${new Date().toISOString().split('T')[0]}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('Export error:', error);
+                    alert(`Failed to export data: ${error.message}`);
+                }
+            };
+
+            const handleImport = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                if (!file.name.endsWith('.json')) {
+                    alert('Please select a valid JSON file.');
+                    event.target.value = '';
+                    return;
+                }
+
+                if (!confirm('This will replace all current data. Are you sure?')) {
+                    event.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        // Validate imported data structure
+                        const requiredKeys = ['weddingInfo', 'timeline', 'guests', 'vendors', 'budget', 'tasks', 'menus', 'travel'];
+                        const missingKeys = requiredKeys.filter(key => !importedData[key]);
+                        
+                        if (missingKeys.length > 0) {
+                            alert(`Invalid data file. Missing required fields: ${missingKeys.join(', ')}`);
+                            event.target.value = '';
+                            return;
+                        }
+
+                        await saveData(importedData);
+                        setData(importedData);
+                        setFormData(importedData.weddingInfo);
+                        alert('Data imported successfully!');
+                    } catch (error) {
+                        if (error instanceof SyntaxError) {
+                            alert('Invalid JSON file. Please check the file format.');
+                        } else {
+                            alert(`Error importing data: ${error.message}`);
+                        }
+                        console.error('Import error:', error);
+                    }
+                    event.target.value = '';
+                };
+                reader.onerror = () => {
+                    alert('Failed to read file. Please try again.');
+                    event.target.value = '';
+                };
+                reader.readAsText(file);
+            };
+
+            const handleReset = async () => {
+                if (confirm('This will reset all data to default values. This action cannot be undone. Are you sure?')) {
+                    const resetData = { ...DEFAULT_DATA };
+                    await saveData(resetData);
+                    setData(resetData);
+                    setFormData(resetData.weddingInfo);
+                    alert('Data has been reset to defaults.');
+                }
+            };
+
+            return (
+                <div>
+                    <div className="card">
+                        <h2 className="card-title">Wedding Information</h2>
+                        {!editMode ? (
+                            <>
+                                <div className="grid-2" style={{ marginBottom: '16px' }}>
+                                    <div>
+                                        <p><strong>Bride's Name:</strong> {weddingInfo.brideName}</p>
+                                        <p><strong>Groom's Name:</strong> {weddingInfo.groomName}</p>
+                                    </div>
+                                    <div>
+                                        <p><strong>Wedding Date:</strong> {formatDate(weddingInfo.weddingDate)}</p>
+                                        <p><strong>Location:</strong> {weddingInfo.location}</p>
+                                        <p><strong>Total Budget:</strong> {formatCurrency(weddingInfo.totalBudget)}</p>
+                                    </div>
+                                </div>
+                                <button className="btn btn-primary" onClick={() => setEditMode(true)}>Edit Information</button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label">Bride's Name</label>
+                                        <input 
+                                            type="text"
+                                            className={`form-input ${formErrors.brideName ? 'error' : ''}`}
+                                            value={formData.brideName}
+                                            onChange={e => {
+                                                setFormData({ ...formData, brideName: e.target.value });
+                                                if (formErrors.brideName) {
+                                                    setFormErrors({ ...formErrors, brideName: null });
+                                                }
+                                            }}
+                                        />
+                                        {formErrors.brideName && <div className="error-message">{formErrors.brideName}</div>}
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Groom's Name</label>
+                                        <input 
+                                            type="text"
+                                            className={`form-input ${formErrors.groomName ? 'error' : ''}`}
+                                            value={formData.groomName}
+                                            onChange={e => {
+                                                setFormData({ ...formData, groomName: e.target.value });
+                                                if (formErrors.groomName) {
+                                                    setFormErrors({ ...formErrors, groomName: null });
+                                                }
+                                            }}
+                                        />
+                                        {formErrors.groomName && <div className="error-message">{formErrors.groomName}</div>}
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Wedding Date</label>
+                                        <input 
+                                            type="date"
+                                            className={`form-input ${formErrors.weddingDate ? 'error' : ''}`}
+                                            value={formData.weddingDate}
+                                            onChange={e => {
+                                                setFormData({ ...formData, weddingDate: e.target.value });
+                                                if (formErrors.weddingDate) {
+                                                    setFormErrors({ ...formErrors, weddingDate: null });
+                                                }
+                                            }}
+                                        />
+                                        {formErrors.weddingDate && <div className="error-message">{formErrors.weddingDate}</div>}
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Location</label>
+                                        <input 
+                                            type="text"
+                                            className={`form-input ${formErrors.location ? 'error' : ''}`}
+                                            value={formData.location}
+                                            onChange={e => {
+                                                setFormData({ ...formData, location: e.target.value });
+                                                if (formErrors.location) {
+                                                    setFormErrors({ ...formErrors, location: null });
+                                                }
+                                            }}
+                                        />
+                                        {formErrors.location && <div className="error-message">{formErrors.location}</div>}
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Total Budget (₹)</label>
+                                        <input 
+                                            type="number"
+                                            className={`form-input ${formErrors.totalBudget ? 'error' : ''}`}
+                                            value={formData.totalBudget}
+                                            onChange={e => {
+                                                setFormData({ ...formData, totalBudget: parseFloat(e.target.value) || 0 });
+                                                if (formErrors.totalBudget) {
+                                                    setFormErrors({ ...formErrors, totalBudget: null });
+                                                }
+                                            }}
+                                        />
+                                        {formErrors.totalBudget && <div className="error-message">{formErrors.totalBudget}</div>}
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: '16px' }}>
+                                    <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
+                                    <button className="btn btn-outline" onClick={() => { setEditMode(false); setFormData(weddingInfo); }}>Cancel</button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="card">
+                        <h2 className="card-title">Data Management</h2>
+                        <p style={{ marginBottom: '16px', color: 'var(--color-text-secondary)' }}>
+                            Export all your wedding data as a JSON backup file, or import previously saved data.
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <button className="btn btn-success" onClick={handleExport} style={{ flex: '1', minWidth: '200px' }}>
+                                📥 Export All Data
+                            </button>
+                            <label className="btn btn-primary" style={{ cursor: 'pointer', flex: '1', minWidth: '200px' }}>
+                                📤 Import All Data
+                                <input 
+                                    type="file" 
+                                    accept=".json" 
+                                    onChange={handleImport}
+                                    style={{ display: 'none' }}
+                                />
+                            </label>
+                        </div>
+                        <div style={{ marginTop: '16px' }}>
+                            <button className="btn btn-danger" onClick={handleReset}>
+                                🔄 Reset to Default Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h2 className="card-title">About This App</h2>
+                        <p style={{ marginBottom: '8px' }}>
+                            <strong>Wedding Planner</strong> - A complete wedding management solution
+                        </p>
+                        <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
+                            This application stores all data in memory during your session. 
+                            Make sure to export your data regularly as a backup to save your progress. 
+                            Use the Export/Import feature to backup and restore your data.
+                        </p>
+                        <p style={{ fontSize: '14px', color: 'var(--color-text-secondary)', marginTop: '8px' }}>
+                            <strong>Features:</strong> Dashboard, Timeline Management, Guest List, Vendor Management, 
+                            Budget Tracking, Tasks Checklist, Event Menus, Travel &amp; Accommodations, Data Export/Import
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
