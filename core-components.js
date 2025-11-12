@@ -427,7 +427,12 @@ const TimelineEventModal = ({ event, onSave, onClose, vendors }) => {
                     <SelectOrAddField
                         label="Ceremony"
                         value={formData.ceremony}
-                        onChange={(val) => setFormData({ ...formData, ceremony: val })}
+                        onChange={(val) => {
+                            setFormData({ ...formData, ceremony: val });
+                            if (!defaultCeremonies.includes(val) && !ceremonies.includes(val)) {
+                                setCeremonies([...ceremonies, val]);
+                            }
+                        }}
                         options={ceremonies}
                         placeholder="Enter custom ceremony"
                     />

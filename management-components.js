@@ -910,7 +910,12 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
                             <SelectOrAddField
                                 label="Vendor Type"
                                 value={formData.type}
-                                onChange={(val) => setFormData({ ...formData, type: val })}
+                                onChange={(val) => {
+                                    setFormData({ ...formData, type: val });
+                                    if (!defaultVendorTypes.includes(val) && !vendorTypes.includes(val)) {
+                                        setVendorTypes([...vendorTypes, val]);
+                                    }
+                                }}
                                 options={vendorTypes}
                                 placeholder="Enter custom vendor type"
                             />

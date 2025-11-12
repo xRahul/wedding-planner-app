@@ -1260,7 +1260,12 @@ const { useState, useEffect, useMemo } = React;
                             <SelectOrAddField
                                 label="Event"
                                 value={formData.event}
-                                onChange={(val) => setFormData({ ...formData, event: val })}
+                                onChange={(val) => {
+                                    setFormData({ ...formData, event: val });
+                                    if (!defaultEvents.includes(val) && !northIndianEvents.includes(val)) {
+                                        setNorthIndianEvents([...northIndianEvents, val]);
+                                    }
+                                }}
                                 options={northIndianEvents}
                                 placeholder="Enter custom event"
                             />
