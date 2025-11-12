@@ -3,12 +3,17 @@ const urlsToCache = [
     '/',
     '/index.html',
     '/styles.css',
-    '/scr.js',
-    '/storage.js',
+    '/env.js',
     '/db.js',
-    'https://unpkg.com/react@18/umd/react.production.min.js',
-    'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-    'https://unpkg.com/@babel/standalone/babel.min.js'
+    '/storage.js',
+    '/utils.js',
+    '/core-components.js',
+    '/management-components.js',
+    '/special-components.js',
+    '/app.js',
+    '/pwa.js',
+    '/icons/icon-192x192.png',
+    '/icons/icon-512x512.png'
 ];
 
 // Install service worker and cache all resources
@@ -47,10 +52,7 @@ self.addEventListener('fetch', event => {
 
                         caches.open(CACHE_NAME)
                             .then(cache => {
-                                // Don't cache API calls to the database
-                                if (!event.request.url.includes(DB_CONFIG.host)) {
-                                    cache.put(event.request, responseToCache);
-                                }
+                                cache.put(event.request, responseToCache);
                             });
 
                         return response;
