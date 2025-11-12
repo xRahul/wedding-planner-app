@@ -92,7 +92,7 @@ const Dashboard = ({ data }) => {
 
             <div className="card">
                 <h2 className="card-title">Budget Overview</h2>
-                {data.budget.map(cat => {
+                {[...data.budget].sort((a, b) => b.actual - a.actual).map(cat => {
                     const percentage = cat.planned > 0 ? (cat.actual / cat.planned * 100) : 0;
                     return (
                         <div key={cat.category} style={{ marginBottom: '16px' }}>
@@ -114,7 +114,7 @@ const Dashboard = ({ data }) => {
                 <h2 className="card-title">Upcoming High Priority Tasks</h2>
                 {data.tasks.filter(t => t.status === 'pending' && t.priority === 'high').length > 0 ? (
                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {data.tasks.filter(t => t.status === 'pending' && t.priority === 'high').map(task => (
+                        {data.tasks.filter(t => t.status === 'pending' && t.priority === 'high').sort((a, b) => new Date(a.deadline) - new Date(b.deadline)).map(task => (
                             <li key={task.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--color-border)' }}>
                                 <strong>{task.description}</strong>
                                 <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
@@ -309,11 +309,12 @@ const Timeline = ({ timeline, updateData, weddingDate }) => {
                                         <div style={{ fontSize: '12px', marginTop: '8px' }}>
                                             <strong>Vendors:</strong>
                                             <div style={{ marginTop: '4px' }}>
-                                                {event.vendorTypes.map(type => {
+                                                {event.vendorTypes.sort().map(type => {
                                                     const assigned = event.assignedVendors?.[type] || [];
                                                     const vendorNames = (Array.isArray(assigned) ? assigned : [assigned])
                                                         .map(id => vendors.find(v => v.id === id)?.name)
-                                                        .filter(Boolean);
+                                                        .filter(Boolean)
+                                                        .sort();
                                                     return (
                                                         <div key={type} style={{ marginBottom: '2px' }}>
                                                             <span style={{ textTransform: 'capitalize' }}>{type.replace('_', ' ')}:</span>{' '}
@@ -480,7 +481,7 @@ const TimelineEventModal = ({ event, onSave, onClose, vendors }) => {
                             onChange={handleVendorTypeChange}
                             style={{ height: '120px' }}
                         >
-                            {vendorTypes.map(type => (
+                            {[...vendorTypes].sort().map(type => (
                                 <option key={type} value={type}>{type.replace('_', ' ')}</option>
                             ))}
                         </select>
@@ -503,7 +504,7 @@ const TimelineEventModal = ({ event, onSave, onClose, vendors }) => {
                                             onChange={e => handleVendorAssign(type, e)}
                                             style={{ height: '80px' }}
                                         >
-                                            {typeVendors.map(v => (
+                                            {typeVendors.sort((a, b) => a.name.localeCompare(b.name)).map(v => (
                                                 <option key={v.id} value={v.id}>{v.name}</option>
                                             ))}
                                         </select>
