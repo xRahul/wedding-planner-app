@@ -1,164 +1,17 @@
 const { useState, useEffect, useMemo } = React;
-
-const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
-    const [isAdding, setIsAdding] = useState(false);
-    const [newValue, setNewValue] = useState('');
-
-    const handleAdd = () => {
-        if (newValue.trim()) {
-            onChange(newValue.trim());
-            setNewValue('');
-            setIsAdding(false);
-        }
-    };
-
-    return (
-        <div className="form-group">
-            <label className="form-label">{label}</label>
-            {!isAdding ? (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <select 
-                        className="form-select"
-                        value={value}
-                        onChange={e => onChange(e.target.value)}
-                        style={{ flex: 1 }}
-                    >
-                        <option value="">Select {label}</option>
-                        {options.map(opt => (
-                            <option key={opt} value={opt}>
-                                {opt.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </option>
-                        ))}
-                    </select>
-                    <button 
-                        type="button"
-                        className="btn btn-outline btn-small"
-                        onClick={() => setIsAdding(true)}
-                    >
-                        + Add New
-                    </button>
-                </div>
-            ) : (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <input 
-                        type="text"
-                        className="form-input"
-                        value={newValue}
-                        onChange={e => setNewValue(e.target.value)}
-                        placeholder={placeholder || `Enter new ${label.toLowerCase()}`}
-                        style={{ flex: 1 }}
-                        onKeyPress={e => e.key === 'Enter' && handleAdd()}
-                    />
-                    <button 
-                        type="button"
-                        className="btn btn-primary btn-small"
-                        onClick={handleAdd}
-                    >
-                        Add
-                    </button>
-                    <button 
-                        type="button"
-                        className="btn btn-outline btn-small"
-                        onClick={() => { setIsAdding(false); setNewValue(''); }}
-                    >
-                        Cancel
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-};
 // ==================== GUESTS COMPONENT ====================
 
         const Guests = ({ guests, updateData, data }) => {
-            const [showModal, setShowModal] = useState(false);
-            const [editingGuest, setEditingGuest] = useState(null);
-            const [filter, setFilter] = useState('all');
+            const { showModal, editing: editingGuest, handleAdd, handleEdit, handleSave, handleDelete, closeModal } = useCRUD(guests, updateData, 'guests', validateGuest);
+            const [filteredGuests, filter, setFilter] = useFilter(guests, (g, f) => g.category === f || g.rsvpStatus === f);
             const [savedCategories, setSavedCategories] = useState(data.savedGuestCategories || []);
             const [savedRelations, setSavedRelations] = useState(data.savedGuestRelations || []);
             const [savedDietary, setSavedDietary] = useState(data.savedDietaryPreferences || []);
             const [savedFamilyRelations, setSavedFamilyRelations] = useState(data.savedFamilyRelations || []);
 
-            const handleUpdateCategories = (newCategories) => {
-                setSavedCategories(newCategories);
-                updateData('savedGuestCategories', newCategories);
-            };
-
-            const handleUpdateRelations = (newRelations) => {
-                setSavedRelations(newRelations);
-                updateData('savedGuestRelations', newRelations);
-            };
-
-            const handleUpdateDietary = (newDietary) => {
-                setSavedDietary(newDietary);
-                updateData('savedDietaryPreferences', newDietary);
-            };
-
-            const handleUpdateFamilyRelations = (newRelations) => {
-                setSavedFamilyRelations(newRelations);
-                updateData('savedFamilyRelations', newRelations);
-            };
-
-            const filteredGuests = useMemo(() => {
-                if (filter === 'all') return guests;
-                return guests.filter(g => g.category === filter || g.rsvpStatus === filter);
-            }, [guests, filter]);
-
-            const handleAdd = () => {
-                setEditingGuest({
-                    id: generateId(),
-                    type: 'single',
-                    name: '',
-                    category: 'family',
-                    side: 'groom',
-                    relation: '',
-                    phone: '',
-                    dietary: 'veg',
-                    rsvpStatus: 'pending',
-                    aadharCollected: false,
-                    room: '',
-                    arrivalDate: '',
-                    departureDate: '',
-                    notes: '',
-                    familyMembers: []
-                });
-                setShowModal(true);
-            };
-
-            const handleEdit = (guest) => {
-                setEditingGuest({ ...guest });
-                setShowModal(true);
-            };
-
-            const handleSave = (guest) => {
-                try {
-                    const errors = validateGuest(guest);
-                    if (errors) {
-                        const errorMsg = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join('\n');
-                        alert(`Please fix the following errors:\n\n${errorMsg}`);
-                        return;
-                    }
-                    const index = guests.findIndex(g => g.id === guest.id);
-                    let updatedGuests;
-                    if (index >= 0) {
-                        updatedGuests = [...guests];
-                        updatedGuests[index] = guest;
-                    } else {
-                        updatedGuests = [...guests, guest];
-                    }
-                    updateData('guests', updatedGuests);
-                    setShowModal(false);
-                    setEditingGuest(null);
-                } catch (error) {
-                    console.error('Error saving guest:', error);
-                    alert(`Failed to save guest: ${error.message}`);
-                }
-            };
-
-            const handleDelete = (id) => {
-                if (confirm('Delete this guest?')) {
-                    updateData('guests', guests.filter(g => g.id !== id));
-                }
+            const updateSaved = (key, val, setter) => {
+                setter(val);
+                updateData(key, val);
             };
 
             const stats = useMemo(() => {
@@ -172,21 +25,23 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
 
             return (
                 <div>
-                    <div className="card">
-                        <div className="flex-between">
-                            <h2 className="card-title">Guest List ({stats.total} total)</h2>
-                            <button className="btn btn-primary" onClick={handleAdd}>Add Guest</button>
-                        </div>
+                    <Card title={`Guest List (${stats.total} total)`} action={
+                        <button className="btn btn-primary" onClick={() => handleAdd({
+                            type: 'single', name: '', category: 'family', side: 'groom', relation: '',
+                            phone: '', dietary: 'veg', rsvpStatus: 'pending', aadharCollected: false,
+                            room: '', arrivalDate: '', departureDate: '', notes: '', familyMembers: []
+                        })}>Add Guest</button>
+                    }>
                         <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-                            <button className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter('all')}>All</button>
-                            <button className={`btn ${filter === 'family' ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter('family')}>Family</button>
-                            <button className={`btn ${filter === 'friends' ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter('friends')}>Friends</button>
-                            <button className={`btn ${filter === 'yes' ? 'btn-success' : 'btn-outline'} btn-small`} onClick={() => setFilter('yes')}>Confirmed ({stats.confirmed})</button>
-                            <button className={`btn ${filter === 'pending' ? 'btn-outline' : 'btn-outline'} btn-small`} onClick={() => setFilter('pending')}>Pending ({stats.pending})</button>
+                            {['all', 'family', 'friends', 'yes', 'pending'].map(f => (
+                                <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f)}>
+                                    {f === 'all' ? 'All' : f === 'yes' ? `Confirmed (${stats.confirmed})` : f === 'pending' ? `Pending (${stats.pending})` : f.charAt(0).toUpperCase() + f.slice(1)}
+                                </button>
+                            ))}
                         </div>
-                    </div>
+                    </Card>
 
-                    <div className="card">
+                    <Card>
                         {filteredGuests.length > 0 ? (
                             <div className="table-container">
                                 <table className="table">
@@ -321,9 +176,9 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
                                                     )}
                                                 </td>
                                                 <td>
-                                                    <span className={`badge ${guest.rsvpStatus === 'yes' ? 'badge-success' : guest.rsvpStatus === 'no' ? 'badge-error' : 'badge-warning'}`}>
+                                                    <Badge status={guest.rsvpStatus}>
                                                         {guest.rsvpStatus === 'yes' ? 'Yes' : guest.rsvpStatus === 'no' ? 'No' : 'Pending'}
-                                                    </span>
+                                                    </Badge>
                                                     {guest.type === 'family' && guest.familyMembers && guest.familyMembers.length > 0 && (
                                                         <div style={{ fontSize: '11px', marginTop: '4px' }}>
                                                             {guest.familyMembers.map((member, idx) => (
@@ -361,35 +216,29 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
                                                     )}
                                                 </td>
                                                 <td>
-                                                    <button className="btn btn-outline btn-small" onClick={() => handleEdit(guest)}>Edit</button>
-                                                    <button className="btn btn-danger btn-small" onClick={() => handleDelete(guest.id)}>Delete</button>
+                                                    <ActionButtons onEdit={() => handleEdit(guest)} onDelete={() => handleDelete(guest.id)} />
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-                        ) : (
-                            <div className="empty-state">
-                                <div className="empty-state-icon">👥</div>
-                                <p>No guests found</p>
-                            </div>
-                        )}
-                    </div>
+                        ) : <EmptyState icon="👥" message="No guests found" />}
+                    </Card>
 
                     {showModal && (
                         <GuestModal
                             guest={editingGuest}
                             onSave={handleSave}
-                            onClose={() => { setShowModal(false); setEditingGuest(null); }}
+                            onClose={closeModal}
                             savedCategories={savedCategories}
                             savedRelations={savedRelations}
                             savedDietary={savedDietary}
                             savedFamilyRelations={savedFamilyRelations}
-                            onUpdateCategories={handleUpdateCategories}
-                            onUpdateRelations={handleUpdateRelations}
-                            onUpdateDietary={handleUpdateDietary}
-                            onUpdateFamilyRelations={handleUpdateFamilyRelations}
+                            onUpdateCategories={v => updateSaved('savedGuestCategories', v, setSavedCategories)}
+                            onUpdateRelations={v => updateSaved('savedGuestRelations', v, setSavedRelations)}
+                            onUpdateDietary={v => updateSaved('savedDietaryPreferences', v, setSavedDietary)}
+                            onUpdateFamilyRelations={v => updateSaved('savedFamilyRelations', v, setSavedFamilyRelations)}
                         />
                     )}
                 </div>
@@ -697,67 +546,8 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
         // ==================== VENDORS COMPONENT ====================
 
         const Vendors = ({ vendors, updateData }) => {
-            const [showModal, setShowModal] = useState(false);
-            const [editingVendor, setEditingVendor] = useState(null);
-            const [filter, setFilter] = useState('all');
-
-            const filteredVendors = useMemo(() => {
-                if (filter === 'all') return vendors;
-                return vendors.filter(v => v.type === filter || v.status === filter);
-            }, [vendors, filter]);
-
-            const handleAdd = () => {
-                setEditingVendor({
-                    id: generateId(),
-                    type: 'decorator',
-                    name: '',
-                    contact: '',
-                    email: '',
-                    estimatedCost: 0,
-                    finalCost: 0,
-                    status: 'pending',
-                    availability: [],
-                    bookedDate: '',
-                    notes: ''
-                });
-                setShowModal(true);
-            };
-
-            const handleEdit = (vendor) => {
-                setEditingVendor({ ...vendor });
-                setShowModal(true);
-            };
-
-            const handleSave = (vendor) => {
-                try {
-                    const errors = validateVendor(vendor);
-                    if (errors) {
-                        const errorMsg = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join('\n');
-                        alert(`Please fix the following errors:\n\n${errorMsg}`);
-                        return;
-                    }
-                    const index = vendors.findIndex(v => v.id === vendor.id);
-                    let updatedVendors;
-                    if (index >= 0) {
-                        updatedVendors = [...vendors];
-                        updatedVendors[index] = vendor;
-                    } else {
-                        updatedVendors = [...vendors, vendor];
-                    }
-                    updateData('vendors', updatedVendors);
-                    setShowModal(false);
-                    setEditingVendor(null);
-                } catch (error) {
-                    console.error('Error saving vendor:', error);
-                    alert(`Failed to save vendor: ${error.message}`);
-                }
-            };
-
-            const handleDelete = (id) => {
-                if (confirm('Delete this vendor?')) {
-                    updateData('vendors', vendors.filter(v => v.id !== id));
-                }
-            };
+            const { showModal, editing: editingVendor, handleAdd, handleEdit, handleSave, handleDelete, closeModal } = useCRUD(vendors, updateData, 'vendors', validateVendor);
+            const [filteredVendors, filter, setFilter] = useFilter(vendors, (v, f) => v.type === f || v.status === f);
 
             const totalCost = useMemo(() => {
                 return vendors.reduce((sum, v) => sum + (v.finalCost || v.cost || 0), 0);
@@ -765,23 +555,25 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
 
             return (
                 <div>
-                    <div className="card">
-                        <div className="flex-between">
-                            <h2 className="card-title">Vendors ({vendors.length} total)</h2>
-                            <button className="btn btn-primary" onClick={handleAdd}>Add Vendor</button>
-                        </div>
+                    <Card title={`Vendors (${vendors.length} total)`} action={
+                        <button className="btn btn-primary" onClick={() => handleAdd({
+                            type: 'decorator', name: '', contact: '', email: '', estimatedCost: 0,
+                            finalCost: 0, status: 'pending', availability: [], bookedDate: '', notes: ''
+                        })}>Add Vendor</button>
+                    }>
                         <div style={{ marginTop: '16px' }}>
                             <strong>Total Vendor Cost: {formatCurrency(totalCost)}</strong>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-                            <button className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter('all')}>All</button>
-                            <button className={`btn ${filter === 'confirmed' ? 'btn-success' : 'btn-outline'} btn-small`} onClick={() => setFilter('confirmed')}>Confirmed</button>
-                            <button className={`btn ${filter === 'booked' ? 'btn-outline' : 'btn-outline'} btn-small`} onClick={() => setFilter('booked')}>Booked</button>
-                            <button className={`btn ${filter === 'pending' ? 'btn-outline' : 'btn-outline'} btn-small`} onClick={() => setFilter('pending')}>Pending</button>
+                            {['all', 'confirmed', 'booked', 'pending'].map(f => (
+                                <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f)}>
+                                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                                </button>
+                            ))}
                         </div>
-                    </div>
+                    </Card>
 
-                    <div className="card">
+                    <Card>
                         {filteredVendors.length > 0 ? (
                             <div className="table-container">
                                 <table className="table">
@@ -828,36 +620,18 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
                                                         <span style={{ color: 'var(--color-success)', fontWeight: 'bold' }}>{formatDate(vendor.bookedDate)}</span>
                                                     ) : '-'}
                                                 </td>
-                                                <td>
-                                                    <span className={`badge ${vendor.status === 'confirmed' ? 'badge-success' : vendor.status === 'booked' ? 'badge-info' : 'badge-warning'}`}>
-                                                        {vendor.status}
-                                                    </span>
-                                                </td>
+                                                <td><Badge status={vendor.status} /></td>
                                                 <td style={{ fontSize: '11px', maxWidth: '150px' }}>{vendor.notes || '-'}</td>
-                                                <td>
-                                                    <button className="btn btn-outline btn-small" onClick={() => handleEdit(vendor)}>Edit</button>
-                                                    <button className="btn btn-danger btn-small" onClick={() => handleDelete(vendor.id)}>Delete</button>
-                                                </td>
+                                                <td><ActionButtons onEdit={() => handleEdit(vendor)} onDelete={() => handleDelete(vendor.id)} /></td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-                        ) : (
-                            <div className="empty-state">
-                                <div className="empty-state-icon">🤝</div>
-                                <p>No vendors found</p>
-                            </div>
-                        )}
-                    </div>
+                        ) : <EmptyState icon="🤝" message="No vendors found" />}
+                    </Card>
 
-                    {showModal && (
-                        <VendorModal
-                            vendor={editingVendor}
-                            onSave={handleSave}
-                            onClose={() => { setShowModal(false); setEditingVendor(null); }}
-                        />
-                    )}
+                    {showModal && <VendorModal vendor={editingVendor} onSave={handleSave} onClose={closeModal} />}
                 </div>
             );
         };
@@ -1313,61 +1087,8 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
         // ==================== TASKS COMPONENT ====================
 
         const Tasks = ({ tasks, updateData }) => {
-            const [showModal, setShowModal] = useState(false);
-            const [editingTask, setEditingTask] = useState(null);
-            const [filter, setFilter] = useState('all');
-
-            const filteredTasks = useMemo(() => {
-                if (filter === 'all') return tasks;
-                return tasks.filter(t => t.status === filter || t.priority === filter);
-            }, [tasks, filter]);
-
-            const handleAdd = () => {
-                setEditingTask({
-                    id: generateId(),
-                    description: '',
-                    deadline: '',
-                    assignedTo: '',
-                    status: 'pending',
-                    priority: 'medium'
-                });
-                setShowModal(true);
-            };
-
-            const handleEdit = (task) => {
-                setEditingTask({ ...task });
-                setShowModal(true);
-            };
-
-            const handleSave = (task) => {
-                try {
-                    if (!task.description?.trim()) {
-                        alert('Task description is required.');
-                        return;
-                    }
-
-                    const index = tasks.findIndex(t => t.id === task.id);
-                    let updatedTasks;
-                    if (index >= 0) {
-                        updatedTasks = [...tasks];
-                        updatedTasks[index] = task;
-                    } else {
-                        updatedTasks = [...tasks, task];
-                    }
-                    updateData('tasks', updatedTasks);
-                    setShowModal(false);
-                    setEditingTask(null);
-                } catch (error) {
-                    console.error('Error saving task:', error);
-                    alert(`Failed to save task: ${error.message}`);
-                }
-            };
-
-            const handleDelete = (id) => {
-                if (confirm('Delete this task?')) {
-                    updateData('tasks', tasks.filter(t => t.id !== id));
-                }
-            };
+            const { showModal, editing: editingTask, handleAdd, handleEdit, handleSave, handleDelete, closeModal } = useCRUD(tasks, updateData, 'tasks', t => !t.description?.trim() ? { description: 'Required' } : null);
+            const [filteredTasks, filter, setFilter] = useFilter(tasks, (t, f) => t.status === f || t.priority === f);
 
             const handleToggleStatus = (id) => {
                 const updatedTasks = tasks.map(t => 
@@ -1387,20 +1108,19 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
 
             return (
                 <div>
-                    <div className="card">
-                        <div className="flex-between">
-                            <h2 className="card-title">Tasks Checklist ({stats.done}/{stats.total} completed)</h2>
-                            <button className="btn btn-primary" onClick={handleAdd}>Add Task</button>
-                        </div>
+                    <Card title={`Tasks Checklist (${stats.done}/${stats.total} completed)`} action={
+                        <button className="btn btn-primary" onClick={() => handleAdd({
+                            description: '', deadline: '', assignedTo: '', status: 'pending', priority: 'medium'
+                        })}>Add Task</button>
+                    }>
                         <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-                            <button className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter('all')}>All</button>
-                            <button className={`btn ${filter === 'pending' ? 'btn-outline' : 'btn-outline'} btn-small`} onClick={() => setFilter('pending')}>Pending ({stats.pending})</button>
-                            <button className={`btn ${filter === 'done' ? 'btn-success' : 'btn-outline'} btn-small`} onClick={() => setFilter('done')}>Done ({stats.done})</button>
-                            <button className={`btn ${filter === 'high' ? 'btn-secondary' : 'btn-outline'} btn-small`} onClick={() => setFilter('high')}>High Priority ({stats.high})</button>
+                            {[['all', 'All'], ['pending', `Pending (${stats.pending})`], ['done', `Done (${stats.done})`], ['high', `High Priority (${stats.high})`]].map(([f, label]) => (
+                                <button key={f} className={`btn ${filter === f ? 'btn-primary' : 'btn-outline'} btn-small`} onClick={() => setFilter(f)}>{label}</button>
+                            ))}
                         </div>
-                    </div>
+                    </Card>
 
-                    <div className="card">
+                    <Card>
                         {filteredTasks.length > 0 ? (
                             <div className="table-container">
                                 <table className="table">
@@ -1433,40 +1153,18 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
                                                 </td>
                                                 <td>{formatDate(task.deadline)}</td>
                                                 <td>{task.assignedTo}</td>
-                                                <td>
-                                                    <span className={`badge ${task.priority === 'high' ? 'badge-error' : task.priority === 'medium' ? 'badge-warning' : 'badge-info'}`}>
-                                                        {task.priority}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span className={`badge ${task.status === 'done' ? 'badge-success' : 'badge-warning'}`}>
-                                                        {task.status}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <button className="btn btn-outline btn-small" onClick={() => handleEdit(task)}>Edit</button>
-                                                    <button className="btn btn-danger btn-small" onClick={() => handleDelete(task.id)}>Delete</button>
-                                                </td>
+                                                <td><Badge status={task.priority} /></td>
+                                                <td><Badge status={task.status} /></td>
+                                                <td><ActionButtons onEdit={() => handleEdit(task)} onDelete={() => handleDelete(task.id)} /></td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-                        ) : (
-                            <div className="empty-state">
-                                <div className="empty-state-icon">✅</div>
-                                <p>No tasks found</p>
-                            </div>
-                        )}
-                    </div>
+                        ) : <EmptyState icon="✅" message="No tasks found" />}
+                    </Card>
 
-                    {showModal && (
-                        <TaskModal
-                            task={editingTask}
-                            onSave={handleSave}
-                            onClose={() => { setShowModal(false); setEditingTask(null); }}
-                        />
-                    )}
+                    {showModal && <TaskModal task={editingTask} onSave={handleSave} onClose={closeModal} />}
                 </div>
             );
         };
