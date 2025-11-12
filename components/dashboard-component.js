@@ -361,11 +361,11 @@ const DashboardOld = ({ data }) => {
                                 }, 0)}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>🍗 Non-Veg</span>
+                                <span>🌿 Jain</span>
                                 <strong>{data.guests.reduce((sum, g) => {
-                                    let count = g.dietary === 'non_veg' ? 1 : 0;
+                                    let count = g.dietary === 'jain' ? 1 : 0;
                                     if (g.type === 'family' && g.familyMembers) {
-                                        count += g.familyMembers.filter(m => m.dietary === 'non_veg').length;
+                                        count += g.familyMembers.filter(m => m.dietary === 'jain').length;
                                     }
                                     return sum + count;
                                 }, 0)}</strong>

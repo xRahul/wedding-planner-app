@@ -70,14 +70,23 @@ const TaskCompletionAnalytics = ({ data }) => {
 const GuestAnalytics = ({ data }) => {
     const stats = useMemo(() => {
         const guests = data.guests || [];
-        const totalEntries = guests.length;
+        const totalFamilies = guests.filter(g => g.type === 'family').length;
+        const totalSingles = guests.filter(g => g.type === 'single').length;
         const totalIndividuals = guests.reduce((sum, g) => {
             if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
             return sum + 1;
         }, 0);
         
         const rsvp = { yes: 0, pending: 0, no: 0 };
-        guests.forEach(g => rsvp[g.rsvpStatus]++);
+        const rsvpPeople = { yes: 0, pending: 0, no: 0 };
+        guests.forEach(g => {
+            rsvp[g.rsvpStatus]++;
+            if (g.type === 'family') {
+                rsvpPeople[g.rsvpStatus] += 1 + (g.familyMembers?.length || 0);
+            } else {
+                rsvpPeople[g.rsvpStatus]++;
+            }
+        });
         
         const byCategory = {};
         guests.forEach(g => {
@@ -87,7 +96,7 @@ const GuestAnalytics = ({ data }) => {
         const bySide = { bride: 0, groom: 0 };
         guests.forEach(g => bySide[g.side]++);
         
-        const dietary = { veg: 0, non_veg: 0, jain: 0, other: 0 };
+        const dietary = { veg: 0, jain: 0, other: 0 };
         guests.forEach(g => {
             if (g.dietary) dietary[g.dietary]++;
             if (g.type === 'family' && g.familyMembers) {
@@ -104,26 +113,42 @@ const GuestAnalytics = ({ data }) => {
             return sum + count;
         }, 0);
         
-        return { totalEntries, totalIndividuals, rsvp, byCategory, bySide, dietary, needsRoom, aadharCollected };
+        return { totalFamilies, totalSingles, totalIndividuals, rsvp, rsvpPeople, byCategory, bySide, dietary, needsRoom, aadharCollected };
     }, [data.guests]);
     
     return (
         <Card title="👥 Guest Analytics">
+            <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                    <div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.totalIndividuals}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Total People</div>
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.totalFamilies}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>👨👩👧👦 Families</div>
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.totalSingles}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>👤 Singles</div>
+                    </div>
+                </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                 <div>
                     <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>RSVP Status</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span>✅ Confirmed</span>
-                            <strong style={{ color: 'var(--color-success)' }}>{stats.rsvp.yes}</strong>
+                            <strong style={{ color: 'var(--color-success)' }}>{stats.rsvpPeople.yes} people</strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span>⏳ Pending</span>
-                            <strong style={{ color: 'var(--color-warning)' }}>{stats.rsvp.pending}</strong>
+                            <strong style={{ color: 'var(--color-warning)' }}>{stats.rsvpPeople.pending} people</strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span>❌ Declined</span>
-                            <strong>{stats.rsvp.no}</strong>
+                            <strong>{stats.rsvpPeople.no} people</strong>
                         </div>
                     </div>
                 </div>
@@ -148,10 +173,6 @@ const GuestAnalytics = ({ data }) => {
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span>🥗 Veg</span>
                             <strong>{stats.dietary.veg}</strong>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>🍗 Non-Veg</span>
-                            <strong>{stats.dietary.non_veg}</strong>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span>🌿 Jain</span>
@@ -473,15 +494,15 @@ const SmartRecommendations = ({ data }) => {
             recs.push({ type: 'warning', message: `Budget ${budgetUtil.toFixed(0)}% used - monitor spending closely`, action: 'budget' });
         }
         
-        const dietaryRestrictions = data.guests?.reduce((sum, g) => {
-            let count = g.dietary && g.dietary !== 'veg' && g.dietary !== 'non_veg' ? 1 : 0;
+        const jainGuests = data.guests?.reduce((sum, g) => {
+            let count = g.dietary === 'jain' ? 1 : 0;
             if (g.type === 'family' && g.familyMembers) {
-                count += g.familyMembers.filter(m => m.dietary && m.dietary !== 'veg' && m.dietary !== 'non_veg').length;
+                count += g.familyMembers.filter(m => m.dietary === 'jain').length;
             }
             return sum + count;
         }, 0) || 0;
-        if (dietaryRestrictions > 10) {
-            recs.push({ type: 'info', message: `${dietaryRestrictions} special dietary needs - brief caterer`, action: 'menus' });
+        if (jainGuests > 10) {
+            recs.push({ type: 'info', message: `${jainGuests} Jain guests - ensure Jain menu options`, action: 'menus' });
         }
         
         return recs.sort((a, b) => {
@@ -534,10 +555,8 @@ const SummaryStats = ({ data }) => {
         const overdueTasks = data.tasks?.filter(t => t.status === 'pending' && t.deadline && new Date(t.deadline) < now).length || 0;
         const taskHealth = totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(0) : 0;
         
-        const totalGuests = data.guests?.length || 0;
         const confirmedGuests = data.guests?.filter(g => g.rsvpStatus === 'yes').length || 0;
         const pendingGuests = data.guests?.filter(g => g.rsvpStatus === 'pending').length || 0;
-        const declinedGuests = data.guests?.filter(g => g.rsvpStatus === 'no').length || 0;
         
         const totalBudget = data.weddingInfo?.totalBudget || 0;
         const spent = data.budget?.reduce((sum, cat) => sum + (cat.actual || 0), 0) || 0;
@@ -550,7 +569,7 @@ const SummaryStats = ({ data }) => {
         
         const criticalItems = overdueTasks + (pendingGuests > 20 ? 1 : 0) + (budgetUtil > 90 ? 1 : 0);
         
-        return { daysToWedding, taskHealth, overdueTasks, confirmedGuests, pendingGuests, declinedGuests, 
+        return { daysToWedding, taskHealth, overdueTasks, confirmedGuests, 
                  spent, remaining, budgetUtil, avgReadiness, criticalItems };
     }, [data]);
     
@@ -574,9 +593,15 @@ const SummaryStats = ({ data }) => {
             
             <div style={{ padding: '16px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>
                 <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>👥 Guest Count</div>
-                <div style={{ fontSize: '32px', fontWeight: 'bold' }}>{stats.confirmedGuests}</div>
+                <div style={{ fontSize: '32px', fontWeight: 'bold' }}>{data.guests?.reduce((sum, g) => {
+                    if (g.rsvpStatus === 'yes') {
+                        if (g.type === 'family') return sum + 1 + (g.familyMembers?.length || 0);
+                        return sum + 1;
+                    }
+                    return sum;
+                }, 0) || 0}</div>
                 <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                    {stats.pendingGuests} pending • {stats.declinedGuests} declined
+                    {stats.confirmedGuests} entries ({data.guests?.filter(g => g.type === 'family' && g.rsvpStatus === 'yes').length || 0} families, {data.guests?.filter(g => g.type === 'single' && g.rsvpStatus === 'yes').length || 0} singles)
                 </div>
             </div>
             
