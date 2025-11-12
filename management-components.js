@@ -864,8 +864,7 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
 
         const VendorModal = ({ vendor, onSave, onClose }) => {
             const [formData, setFormData] = useState(vendor);
-
-            const vendorTypes = [
+            const [vendorTypes, setVendorTypes] = useState([
                 'pandit_ji', 'decorator', 'caterer', 'dj', 
                 'photographer', 'videographer', 'florist', 
                 'mehendi_artist', 'makeup_artist', 'choreographer',
@@ -873,7 +872,30 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
                 'wedding_planner', 'invitation_cards', 'transport',
                 'tent_house', 'sound_system', 'fireworks',
                 'stage_setup', 'varmala_setup', 'luxury_car_rental'
-            ];
+            ]);
+
+            useEffect(() => {
+                const loadCustomVendorTypes = async () => {
+                    const data = await loadData();
+                    if (data.customVendorTypes && data.customVendorTypes.length > 0) {
+                        setVendorTypes([...new Set([...vendorTypes, ...data.customVendorTypes])]);
+                    }
+                };
+                loadCustomVendorTypes();
+            }, []);
+
+            const handleSaveWithCustomType = async () => {
+                if (formData.type && !vendorTypes.includes(formData.type)) {
+                    const data = await loadData();
+                    const customTypes = data.customVendorTypes || [];
+                    if (!customTypes.includes(formData.type)) {
+                        customTypes.push(formData.type);
+                        data.customVendorTypes = customTypes;
+                        await saveData(data);
+                    }
+                }
+                onSave(formData);
+            };
 
             return (
                 <div className="modal-overlay" onClick={onClose}>
@@ -1051,7 +1073,7 @@ const SelectOrAddField = ({ label, value, onChange, options, placeholder }) => {
                             <button className="btn btn-outline" onClick={onClose}>Cancel</button>
                             <button 
                                 className="btn btn-primary" 
-                                onClick={() => onSave(formData)}
+                                onClick={handleSaveWithCustomType}
                                 disabled={!formData.name}
                             >
                                 Save Vendor

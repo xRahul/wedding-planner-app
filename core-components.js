@@ -360,14 +360,24 @@ const Timeline = ({ timeline, updateData, weddingDate }) => {
 
 const TimelineEventModal = ({ event, onSave, onClose, vendors }) => {
     const [formData, setFormData] = useState(event);
-
-    const ceremonies = [
+    const [ceremonies, setCeremonies] = useState([
         'Roka', 'Sagan', 'Tilak', 
         'Mehendi', 'Sangeet', 'Haldi', 
         'Ganesh Puja', 'Mandap Muhurat', 'Kalash Sthapna',
         'Baraat', 'Jaimala', 'Pheras', 
         'Vidai', 'Reception', 'Grih Pravesh'
-    ];
+    ]);
+
+    useEffect(() => {
+        const loadCustomCeremonies = async () => {
+            const data = await loadData();
+            if (data.customCeremonies && data.customCeremonies.length > 0) {
+                const allCeremonies = [...new Set([...ceremonies, ...data.customCeremonies])];
+                setCeremonies(allCeremonies);
+            }
+        };
+        loadCustomCeremonies();
+    }, []);
     const vendorTypes = [
         'pandit_ji', 'decorator', 'caterer', 'dj', 
         'photographer', 'videographer', 'florist', 
@@ -391,7 +401,16 @@ const TimelineEventModal = ({ event, onSave, onClose, vendors }) => {
         });
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (formData.ceremony && !ceremonies.includes(formData.ceremony)) {
+            const data = await loadData();
+            const customCeremonies = data.customCeremonies || [];
+            if (!customCeremonies.includes(formData.ceremony)) {
+                customCeremonies.push(formData.ceremony);
+                data.customCeremonies = customCeremonies;
+                await saveData(data);
+            }
+        }
         onSave(formData);
     };
 

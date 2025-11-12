@@ -1185,14 +1185,24 @@ const { useState, useEffect, useMemo } = React;
 
         const GiftModal = ({ item, onSave, onClose }) => {
             const [formData, setFormData] = useState(item);
-
-            const northIndianEvents = [
+            const [northIndianEvents, setNorthIndianEvents] = useState([
                 'Roka', 'Sagan', 'Tilak', 'Ring Ceremony',
                 'Mehendi', 'Sangeet', 'Haldi', 
                 'Ganesh Puja', 'Kalash Sthapna', 'Mandap Muhurat',
                 'Baraat', 'Jaimala', 'Pheras', 'Vidai', 
                 'Reception', 'Grih Pravesh', 'Pag Phera'
-            ];
+            ]);
+
+            useEffect(() => {
+                const loadCustomEvents = async () => {
+                    const data = await loadData();
+                    if (data.customGiftEvents && data.customGiftEvents.length > 0) {
+                        const allEvents = [...new Set([...northIndianEvents, ...data.customGiftEvents])];
+                        setNorthIndianEvents(allEvents);
+                    }
+                };
+                loadCustomEvents();
+            }, []);
 
             const commonGiftsByCategory = {
                 family: [
@@ -1222,6 +1232,19 @@ const { useState, useEffect, useMemo } = React;
                 const pricePerGift = parseFloat(price) || 0;
                 const totalCost = (formData.quantity || 0) * pricePerGift;
                 setFormData({ ...formData, pricePerGift, totalCost });
+            };
+
+            const handleSaveWithCustomEvent = async () => {
+                if (formData.event && !northIndianEvents.includes(formData.event)) {
+                    const data = await loadData();
+                    const customEvents = data.customGiftEvents || [];
+                    if (!customEvents.includes(formData.event)) {
+                        customEvents.push(formData.event);
+                        data.customGiftEvents = customEvents;
+                        await saveData(data);
+                    }
+                }
+                onSave(formData);
             };
 
             return (
@@ -1324,7 +1347,7 @@ const { useState, useEffect, useMemo } = React;
                             <button className="btn btn-outline" onClick={onClose}>Cancel</button>
                             <button 
                                 className="btn btn-primary" 
-                                onClick={() => onSave(formData)} 
+                                onClick={handleSaveWithCustomEvent} 
                                 disabled={!formData.giftName}
                             >
                                 Save Gift
