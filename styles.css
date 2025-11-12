@@ -558,18 +558,21 @@ body {
     }
     
     .table {
-        font-size: 12px;
+        font-size: 11px;
     }
     
     .table th,
     .table td {
-        padding: var(--space-xs) var(--space-sm);
-        min-width: 80px;
+        padding: var(--space-xs);
+        min-width: 60px;
+        white-space: nowrap;
     }
     
     .modal {
         max-width: 100%;
-        margin: var(--space-sm);
+        margin: 0;
+        border-radius: 0;
+        max-height: 100vh;
     }
     
     .modal-header,
@@ -578,18 +581,81 @@ body {
         padding: var(--space-md);
     }
     
-    .btn {
+    .modal-footer .btn {
         width: 100%;
         margin-right: 0;
     }
     
     .modal-footer {
         flex-direction: column-reverse;
+        gap: var(--space-sm);
     }
     
     .flex-between {
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: stretch !important;
         gap: var(--space-sm);
+    }
+    
+    .flex-between > * {
+        width: 100%;
+    }
+    
+    .flex-between .btn,
+    .flex-between button {
+        width: 100%;
+    }
+    
+    .form-group > div[style*="display: flex"],
+    .form-group > div[style*="display:flex"] {
+        flex-direction: column !important;
+        gap: var(--space-xs) !important;
+    }
+    
+    .form-group > div[style*="display: flex"] > *,
+    .form-group > div[style*="display:flex"] > * {
+        width: 100% !important;
+        flex: none !important;
+        margin: 0 !important;
+    }
+    
+    .card > div[style*="display: flex"],
+    .card > div[style*="display:flex"] {
+        flex-direction: column !important;
+        gap: var(--space-sm) !important;
+    }
+    
+    .card > div[style*="display: flex"] .btn,
+    .card > div[style*="display:flex"] .btn {
+        width: 100%;
+    }
+    
+    .timeline-event > div:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    
+    .timeline-event .btn {
+        width: 100%;
+        margin-right: 0;
+        margin-top: var(--space-xs);
+    }
+    
+    div[style*="display: grid"][style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .timeline-day {
+        padding: var(--space-sm);
+    }
+    
+    .badge {
+        font-size: 10px;
+        padding: 2px 6px;
     }
 }
 
@@ -599,16 +665,63 @@ body {
     }
     
     .header h1 {
-        font-size: 18px;
+        font-size: 16px;
     }
     
     .header p {
-        font-size: 12px;
+        font-size: 11px;
     }
     
     .tab {
+        font-size: 12px;
+        padding: var(--space-sm);
+    }
+    
+    .card-title {
+        font-size: 16px;
+    }
+    
+    .btn {
         font-size: 13px;
-        padding: var(--space-sm) var(--space-md);
+        padding: var(--space-sm);
+    }
+    
+    .btn-small {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
+    .container {
+        padding: var(--space-sm);
+    }
+    
+    .card {
+        padding: var(--space-sm);
+        margin-bottom: var(--space-sm);
+    }
+    
+    .table {
+        font-size: 10px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 4px;
+        min-width: 50px;
+    }
+    
+    .modal-title {
+        font-size: 16px;
+    }
+    
+    .form-label {
+        font-size: 13px;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+        font-size: 14px;
     }
 }
 
