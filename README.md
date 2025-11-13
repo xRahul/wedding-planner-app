@@ -165,6 +165,7 @@ wedding-planner-app/
 │   ├── header-component.js             # Header with countdown
 │   ├── tabs-component.js               # Navigation tabs with stats
 │   ├── analytics-dashboard-components.js # Advanced analytics components
+│   ├── enhanced-analytics.js           # Reusable analytics (Task, Shopping, Travel, Ritual)
 │   ├── dashboard-component.js          # Dashboard with analytics
 │   ├── timeline-component.js           # Timeline management
 │   ├── guest-components.js             # Guest management
@@ -177,6 +178,8 @@ wedding-planner-app/
 │   ├── shopping-components.js          # Shopping lists
 │   ├── travel-components.js            # Travel & transport
 │   └── setting-components.js           # Settings & data management
+├── tests/
+│   └── analytics-tests.js              # Unit tests for analytics components
 ├── styles/
 │   └── accessibility.css               # Accessibility-specific styles
 ├── utils/
@@ -195,12 +198,13 @@ The app loads scripts in a specific order to ensure dependencies are available:
 5. **shared-components-bundle.js** - Shared components and hooks
 6. **header-component.js** - Header
 7. **tabs-component.js** - Navigation
-8. **analytics-dashboard-components.js** - Analytics components
-9. **dashboard-component.js** - Dashboard
-10. **Feature components** - All feature-specific components
-11. **notification-component.js** - Notification system
-12. **app.js** - Main app (must be last)
-13. **pwa.js** - PWA registration
+8. **analytics-dashboard-components.js** - Dashboard analytics components
+9. **enhanced-analytics.js** - Reusable analytics components
+10. **dashboard-component.js** - Dashboard
+11. **Feature components** - All feature-specific components
+12. **notification-component.js** - Notification system
+13. **app.js** - Main app (must be last)
+14. **pwa.js** - PWA registration
 
 ### Shared Components (`shared-components-bundle.js`)
 
@@ -430,29 +434,67 @@ window.securityUtils.encryptGuestData(guest);
 
 ## 📊 Code Statistics
 
-- **Total Components**: 17+ feature components
+- **Total Components**: 19 feature components
 - **Shared Components**: 9 reusable UI components
+- **Analytics Components**: 4 reusable analytics components (Task, Shopping, Travel, Ritual)
 - **Custom Hooks**: 4 shared hooks
 - **Code Reuse**: ~200 lines eliminated through shared components
 - **Reduction**: ~18% code reduction with improved maintainability
 - **Budget Integration**: 5 components with full budget category and payment tracking
 - **Auto-Calculation**: Budget automatically calculates from 5 linked data sources
+- **Unit Tests**: Comprehensive test suite for analytics components
 
-## 🔧 Recent Improvements (v2.5)
+## 🔧 Recent Improvements
 
-- **Auto-Budget Calculation**: Total budget automatically calculated from bride + groom budgets (v2.5)
-- **Budget Insights**: Detailed breakdown showing manual vs linked actual costs (v2.5)
-- **Gift Analytics Tab**: Traditional guidelines and budget summary for gifts (v2.5)
-- **Shopping Templates**: Pre-built shopping lists for bride, groom, and family by event (v2.5)
-- **Travel Templates**: Common transport options with one-click addition (v2.5)
-- **Payment Responsibility Tracking**: Track who should pay (bride/groom/split) for vendors, menus, gifts, shopping, and travel (v2.4)
-- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending) for all budget items (v2.4)
-- **Bride/Groom Budget Tracking**: Separate budget tracking for bride and groom sides with automatic calculation (v2.4)
-- **Budget Auto-Calculation**: Budget automatically calculates from linked items (vendors, menus, gifts, shopping, travel) (v2.4)
-- **Expandable Budget Categories**: Click to expand categories and view all linked items with individual costs (v2.4)
-- **Menu Item Editing**: Full edit support for menu items with payment tracking (v2.3)
-- **Dietary Preferences**: Simplified to Veg and Jain options only (v2.2)
-- **Notification System**: Auto-dismissing notification banners for better UX (v2.2)
+### v2.6 - Enhanced Analytics & Testing
+- **Enhanced Analytics Components**: Reusable analytics for Task, Shopping, Travel, and Ritual components
+- **Toggle Analytics**: Show/hide analytics in all feature components for cleaner UI
+- **Comprehensive Unit Tests**: Full test suite for analytics calculations with 13+ test cases
+- **Analytics Dashboard**: Advanced analytics with Task Completion, Guest Analytics, Budget Health, and Vendor Performance
+- **Visual Progress Tracking**: Progress bars, completion rates, and category breakdowns across all features
+
+### v2.5 - Templates & Auto-Calculation
+- **Auto-Budget Calculation**: Total budget automatically calculated from bride + groom budgets
+- **Budget Insights**: Detailed breakdown showing manual vs linked actual costs
+- **Gift Analytics Tab**: Traditional North Indian guidelines (Shagun amounts, gold coins, dry fruits) and budget summary
+- **Shopping Templates**: Pre-built shopping lists for bride, groom, and family by event
+- **Travel Templates**: Common transport options (AC Bus, Luxury Coach, Tempo Traveller) with one-click addition
+
+### v2.4 - Payment Tracking & Budget Integration
+- **Payment Responsibility Tracking**: Track who should pay (bride/groom/split) for all expenses
+- **Paid By Tracking**: Track who actually paid (bride/groom/split/pending) for all budget items
+- **Bride/Groom Budget Tracking**: Separate budget tracking for bride and groom sides with automatic calculation
+- **Budget Auto-Calculation**: Budget automatically calculates from linked items (vendors, menus, gifts, shopping, travel)
+- **Expandable Budget Categories**: Click to expand categories and view all linked items with individual costs
+
+### v2.3 - Menu Enhancements
+- **Menu Item Editing**: Full edit support for menu items with payment tracking
+
+### v2.2 - UX Improvements
+- **Dietary Preferences**: Simplified to Veg and Jain options only
+- **Notification System**: Auto-dismissing notification banners for better UX
+
+## 🧪 Testing
+
+### Unit Tests
+The app includes a comprehensive unit test suite for analytics components:
+
+**Location**: `tests/analytics-tests.js`
+
+**Test Coverage**:
+- Task Completion Analytics (empty, basic, priority breakdown)
+- Guest Analytics (empty, basic, RSVP, dietary preferences)
+- Budget Health (empty, basic, linked vendors)
+- Vendor Performance (empty, basic, by type)
+
+**Running Tests**:
+```javascript
+// In browser console
+AnalyticsTests.runAll();
+// Returns: { passed, failed, results }
+```
+
+**Test Results**: 13+ test cases covering all analytics calculations
 
 ## 🛠️ Development
 
@@ -462,6 +504,7 @@ window.securityUtils.encryptGuestData(guest);
 3. Add tab in `tabs-component.js`
 4. Add route in `app.js`
 5. Update data structure in `utils.js` if needed
+6. Add unit tests in `tests/` directory if adding analytics
 
 ### Component Pattern
 ```javascript
@@ -475,6 +518,19 @@ const MyComponent = ({ data, updateData }) => {
     </Card>
   );
 };
+```
+
+### Analytics Pattern
+```javascript
+const [showAnalytics, setShowAnalytics] = useState(false);
+
+// Toggle button
+<button onClick={() => setShowAnalytics(!showAnalytics)}>
+  {showAnalytics ? '📊 Hide Analytics' : '📊 Show Analytics'}
+</button>
+
+// Conditional rendering
+{showAnalytics && <MyAnalytics data={data} />}
 ```
 
 ## 🐛 Troubleshooting

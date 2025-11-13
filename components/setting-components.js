@@ -5,6 +5,8 @@ const { useState, useEffect, useMemo } = React;
         const Settings = ({ weddingInfo, updateData, allData, setData, showNotification }) => {
             const [editMode, setEditMode] = useState(false);
             const [formData, setFormData] = useState(weddingInfo);
+            const [testResults, setTestResults] = useState(null);
+            const [runningTests, setRunningTests] = useState(false);
 
 
 
@@ -291,6 +293,69 @@ const { useState, useEffect, useMemo } = React;
                                 <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{allData.travel?.transport?.length || 0}</div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="card">
+                        <h2 className="card-title">🧪 Unit Tests</h2>
+                        <p style={{ marginBottom: '16px', color: 'var(--color-text-secondary)' }}>
+                            Run unit tests for analytics dashboard components to verify calculations are working correctly.
+                        </p>
+                        <button 
+                            className="btn btn-primary" 
+                            onClick={() => {
+                                setRunningTests(true);
+                                setTimeout(() => {
+                                    const results = window.AnalyticsTests.runAll();
+                                    setTestResults(results);
+                                    setRunningTests(false);
+                                    if (results.failed === 0) {
+                                        showNotification(`All ${results.passed} tests passed! ✅`, 'success');
+                                    } else {
+                                        showNotification(`${results.failed} test(s) failed. Check results below.`, 'error');
+                                    }
+                                }, 100);
+                            }}
+                            disabled={runningTests}
+                        >
+                            {runningTests ? '⏳ Running Tests...' : '▶️ Run Unit Tests'}
+                        </button>
+                        
+                        {testResults && (
+                            <div style={{ marginTop: '16px' }}>
+                                <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                                    <div style={{ padding: '12px', background: 'rgba(40, 167, 69, 0.1)', borderRadius: '8px', flex: 1, textAlign: 'center', border: '2px solid var(--color-success)' }}>
+                                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-success)' }}>{testResults.passed}</div>
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Passed</div>
+                                    </div>
+                                    <div style={{ padding: '12px', background: testResults.failed > 0 ? 'rgba(220, 53, 69, 0.1)' : 'var(--color-bg-secondary)', borderRadius: '8px', flex: 1, textAlign: 'center', border: testResults.failed > 0 ? '2px solid var(--color-error)' : '2px solid var(--color-border)' }}>
+                                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: testResults.failed > 0 ? 'var(--color-error)' : 'inherit' }}>{testResults.failed}</div>
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Failed</div>
+                                    </div>
+                                </div>
+                                
+                                <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '12px', background: 'var(--color-bg-secondary)' }}>
+                                    {testResults.results.map((result, idx) => (
+                                        <div key={idx} style={{ 
+                                            padding: '8px', 
+                                            marginBottom: '8px', 
+                                            borderRadius: '4px',
+                                            background: result.status === 'pass' ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+                                            borderLeft: `4px solid ${result.status === 'pass' ? 'var(--color-success)' : 'var(--color-error)'}`
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '13px', fontWeight: '500' }}>{result.name}</span>
+                                                <span style={{ fontSize: '18px' }}>{result.status === 'pass' ? '✅' : '❌'}</span>
+                                            </div>
+                                            {result.status === 'fail' && (
+                                                <div style={{ fontSize: '12px', color: 'var(--color-error)', marginTop: '4px' }}>
+                                                    {result.message}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="card">
