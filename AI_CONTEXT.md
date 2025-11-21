@@ -1,675 +1,134 @@
-# AI Context Document - Wedding Planner App
+# AI Context: Wedding Planner App
 
-COMPREHENSIVE TECHNICAL REFERENCE FOR AI ASSISTANTS - All critical patterns, data structures, and implementation details for efficient code generation and modification.
-
-## CRITICAL ARCHITECTURE RULES
-
-**NO BUILD SYSTEM**: React 18.2.0 + Babel 7.23.2 via CDN. All scripts use `type="text/babel"` for in-browser JSX transpilation. NO webpack/vite/npm build.
-
-**SCRIPT LOAD ORDER IS CRITICAL** (index.html):
-1. security.js (global window.securityUtils)
-2. error-boundary.js (ErrorBoundary component)
-3. storage.js (global window.storageManager)
-4. utils.js (DEFAULT_DATA, validators, formatters)
-5. shared-components-bundle.js (ALL shared components/hooks - MUST load before features)
-6. header-component.js
-7. tabs-component.js
-8. analytics-dashboard-components.js
-9. dashboard-component.js
-10. ALL feature components (timeline, guest, vendor, budget, task, menu, gift, ritual, shopping, travel, setting)
-11. notification-component.js (Notification component + useNotification hook)
-12. app.js (MUST BE LAST - main WeddingPlannerApp component)
-13. pwa.js (service worker registration)
-
-**STATE MANAGEMENT**: Single data object in app.js, passed via props. NO Redux/Context. updateData(key, value) function passed to all components.
-
-**AUTO-SAVE**: Every data change triggers saveData() to localStorage via useEffect in app.js.
-
-## COMPLETE DATA STRUCTURE (DEFAULT_DATA in utils.js)
-
-```javascript
-{
-  weddingInfo: {
-    brideName: "",
-    groomName: "",
-    weddingDate: "",
-    location: "",
-    totalBudget: 0, // Auto-calculated: brideBudget + groomBudget
-    brideBudget: 0,
-    groomBudget: 0
-  },
-  savedGuestCategories: ['family', 'friends', 'relatives', 'family_friends', 'colleagues', 'vendors'],
-  savedGuestRelations: ['maternal_uncle', 'maternal_aunt', 'paternal_uncle', 'paternal_aunt', 'father_sister', 'mother_sister', 'cousin', 'family_friend', 'college_friend', 'work_colleague', 'neighbor'],
-  savedDietaryPreferences: ['veg', 'jain'], // ONLY veg and jain, no non-veg
-  savedFamilyRelations: ['spouse', 'son', 'daughter', 'father', 'mother', 'brother', 'sister', 'grandfather', 'grandmother', 'grandson', 'granddaughter'],
-  customCeremonies: [],
-  customGiftEvents: [],
-  customVendorTypes: [],
-  timeline: [
-    { id, ceremony, date, time, location, dayOffset, notes }
-  ],
-  guests: [
-    {
-      id, type: 'single'|'family', name, category, side: 'bride'|'groom', relation,
-      phone, dietary: 'veg'|'jain', rsvpStatus: 'yes'|'pending'|'no',
-      aadharCollected: bool, room, arrivalDate, departureDate, notes,
-      giftGiven: bool, giftAmount: number, giftDescription,
-      ceremonyParticipation: [], specialNeeds, transportNeeded: bool,
-      familyMembers: [
-        { id, name, familyRelation, phone, room, arrivalDate, departureDate, dietary, aadharCollected, transportNeeded }
-      ]
-    }
-  ],
-  vendors: [
-    {
-      id, type, name, contact, email, estimatedCost, finalCost, status: 'pending'|'booked'|'confirmed'|'cancelled',
-      availability: [{ from, fromTime, to, toTime }], bookedDate, notes,
-      advancePaid, paymentStatus, rating, reviews, budgetCategory,
-      paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
-    }
-  ],
-  budget: [
-    { category: 'venue'|'catering'|'decor'|'bride'|'groom'|'pandit_and_rituals'|'entertainment'|'photography'|'invitations'|'gifts'|'transport'|'other', planned: 0, actual: 0, subcategories: [] }
-  ],
-  tasks: [
-    { id, description, deadline, assignedTo, status: 'pending'|'done', priority: 'low'|'medium'|'high', category: 'vendor'|'preparation'|'shopping'|'transport'|'decoration'|'catering'|'general' }
-  ],
-  menus: [
-    { 
-      id, name, expectedGuests, attendedGuests, budgetCategory, 
-      items: [{ 
-        name, pricePerPlate, description, budgetCategory, 
-        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending' 
-      }] 
-    }
-  ],
-  travel: {
-    transport: [
-      { 
-        id, vehicleType, vehicleName, fromDate, toDate, seats, route, totalPrice, budgetCategory, 
-        kilometers, driverName, driverContact, notes,
-        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
-      }
-    ]
-  },
-  ritualsAndCustoms: {
-    preWedding: [{ id, name, date, time, location, completed, items: [], notes }],
-    mainCeremonies: [{ id, name, date, time, location, completed, items: [], notes }],
-    customs: [{ id, name, description, completed }]
-  },
-  giftsAndFavors: {
-    familyGifts: [{ 
-      id, event, giftName, recipient, quantity, pricePerGift, totalCost, budgetCategory, 
-      status: 'pending'|'ordered'|'purchased'|'delivered', purchasedFrom, notes,
-      paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
-    }],
-    returnGifts: [{ 
-      id, event, giftName, recipient, quantity, pricePerGift, totalCost, budgetCategory,
-      status: 'pending'|'ordered'|'purchased'|'delivered', purchasedFrom, notes,
-      paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
-    }],
-    specialGifts: [{ 
-      id, event, giftName, recipient, quantity, pricePerGift, totalCost, budgetCategory,
-      status: 'pending'|'ordered'|'purchased'|'delivered', purchasedFrom, notes,
-      paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
-    }]
-  },
-  shopping: {
-    bride: [{ 
-      event, 
-      items: [{ 
-        id, item, budget, budgetCategory, status: 'pending'|'ordered'|'received'|'completed', notes,
-        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
-      }] 
-    }],
-    groom: [{ 
-      event, 
-      items: [{ 
-        id, item, budget, budgetCategory, status: 'pending'|'ordered'|'received'|'completed', notes,
-        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
-      }] 
-    }],
-    family: [{ 
-      for, 
-      items: [{ 
-        id, item, budget, budgetCategory, status: 'pending'|'ordered'|'received'|'completed', notes,
-        paymentResponsibility: 'bride'|'groom'|'split', paidBy: 'bride'|'groom'|'split'|'pending'
-      }] 
-    }]
-  },
-  traditions: {
-    preWedding: [{ id, name, description, date, completed }],
-    ritual_items: [{ id, itemName, quantity, purpose, obtained }]
-  }
-}
-```
-
-## SHARED COMPONENTS (shared-components-bundle.js)
-
-**MUST USE THESE - DO NOT RECREATE**
-
-### UI Components
-```javascript
-<Modal title="..." onClose={fn} onSave={fn} saveLabel="Save" saveDisabled={bool}>{children}</Modal>
-<FormField label="Name" type="text|textarea|select" value={val} onChange={fn} error={str} required={bool} placeholder={str} />
-<Badge status="yes|no|pending|confirmed|done|purchased|completed|high|medium|low">{children}</Badge>
-<ProgressRing percentage={num} size={60} strokeWidth={4} color="var(--color-primary)" />
-<QuickStats stats={[{value, label, color}]} />
-<EmptyState icon="👥" message="No data" description="Optional" />
-<Card title="Title" action={<button>...</button>}>{children}</Card>
-<ActionButtons onEdit={fn} onDelete={fn} />
-<SelectOrAddField label="Category" value={val} onChange={fn} options={arr} placeholder="Enter..." />
-```
-
-### Hooks
-```javascript
-// CRUD operations - saves ~60 lines per component
-const { showModal, editing, handleAdd, handleEdit, handleSave, handleDelete, closeModal } 
-  = useCRUD(items, updateData, 'dataKey', validatorFn);
-
-// Filter logic - saves ~10 lines
-const [filtered, filter, setFilter] = useFilter(items, (item, filterValue) => item.field === filterValue);
-
-// Wedding progress metrics
-const { tasks, guests, vendors } = useWeddingProgress(data);
-// Returns: { completed, total, percentage } for each
-
-// Notification management
-const { notification, showNotification, closeNotification } = useNotification();
-// showNotification(message, 'success'|'info')
-```
-
-### Constants
-```javascript
-NORTH_INDIAN_RELATIONS = ['father', 'mother', 'brother', 'sister', 'uncle', 'aunt', 'cousin', 'grandfather', 'grandmother', 'nephew', 'niece', 'son_in_law', 'daughter_in_law', 'mama', 'mami', 'chacha', 'chachi', 'tau', 'tayi', 'bua', 'fufa', 'nana', 'nani', 'dada', 'dadi', 'jija', 'saala', 'saali', 'devar', 'jethani']
-
-NORTH_INDIAN_CEREMONIES = ['Roka', 'Sagan', 'Tilak', 'Ring Ceremony', 'Mehendi', 'Sangeet', 'Haldi', 'Ganesh Puja', 'Kalash Sthapna', 'Mandap Muhurat', 'Baraat', 'Milni', 'Jaimala', 'Kanyadaan', 'Pheras', 'Sindoor', 'Vidai', 'Reception', 'Grih Pravesh', 'Pag Phera', 'Mooh Dikhai']
-```
-
-## UTILITY FUNCTIONS (utils.js)
-
-```javascript
-// Data persistence
-loadData() // async, returns data object or DEFAULT_DATA
-saveData(data) // async, saves to localStorage
-
-// Validation (return errors object or null)
-validateGuest(guest) // checks name, category, side, relation, phone, email, giftAmount
-validateVendor(vendor) // checks name, type, email, phone, costs, paymentResponsibility, paidBy
-validateTimelineEvent(event) // checks ceremony, date
-validateMenuItem(item) // checks name, cost
-validateTravelItem(item) // checks vehicleType, dates, seats, price
-validateWeddingInfo(info) // checks brideName, groomName, brideBudget, groomBudget
-isValidDate(dateString) // returns bool
-
-// Formatters
-generateId() // returns 'id_timestamp_random'
-formatDate(dateString, withTime=false) // returns formatted date string
-formatCurrency(amount) // returns '₹X,XXX'
-getDayLabel(offset) // returns "X days before/after" or "Wedding Day"
-isDatePassed(dateString) // returns bool
-```
-
-## SECURITY UTILITIES (window.securityUtils)
-
-```javascript
-sanitizeInput(str) // XSS prevention
-sanitizeObject(obj) // recursive sanitization
-encryptText(text) // AES-GCM 256-bit encryption
-decryptText(encryptedText) // decryption
-encryptGuestData(guest) // encrypts phone, aadhar, email
-decryptGuestData(guest) // decrypts sensitive fields
-isValidPhone(phone) // validates phone format
-isValidEmail(email) // validates email format
-isValidName(name) // validates name (letters, spaces, hyphens, apostrophes, max 100 chars)
-isValidNumber(value) // validates numeric input
-```
-
-## STORAGE MANAGER (window.storageManager)
-
-```javascript
-// Singleton instance available globally
-window.storageManager.saveData(data) // async, saves to localStorage
-window.storageManager.loadData() // async, loads from localStorage
-window.storageManager.clearAllData() // async, clears all data
-window.storageManager.addChangeListener(fn) // listen to data changes
-window.storageManager.removeChangeListener(fn)
-```
-
-## NOTIFICATION SYSTEM
-
-**In app.js:**
-```javascript
-const { notification, showNotification, closeNotification } = useNotification();
-
-// Pass showNotification to components that need it
-<Settings showNotification={showNotification} ... />
-
-// Render notification
-{notification && <Notification message={notification.message} type={notification.type} onClose={closeNotification} />}
-```
-
-**In components:**
-```javascript
-const MyComponent = ({ data, updateData, showNotification }) => {
-  const handleSuccess = () => {
-    showNotification('Operation successful!', 'success'); // or 'info'
-  };
-  // ...
-};
-```
-
-## STANDARD COMPONENT PATTERN
-
-```javascript
-const FeatureName = ({ data, updateData }) => {
-  // 1. CRUD hook
-  const { showModal, editing, handleAdd, handleEdit, handleSave, handleDelete, closeModal } 
-    = useCRUD(data, updateData, 'dataKey', validatorFn);
-  
-  // 2. Filter hook (optional)
-  const [filtered, filter, setFilter] = useFilter(data, (item, f) => item.field === f);
-  
-  // 3. Stats calculation (useMemo)
-  const stats = useMemo(() => {
-    const total = data.length;
-    const completed = data.filter(d => d.status === 'done').length;
-    return { total, completed, percentage: total > 0 ? (completed/total)*100 : 0 };
-  }, [data]);
-  
-  // 4. Render
-  return (
-    <div>
-      <Card title="Feature" action={<button onClick={() => handleAdd({...template})}>Add</button>}>
-        <QuickStats stats={[{value: stats.total, label: 'Total'}]} />
-        {/* Filter buttons */}
-        {/* Data table/list */}
-      </Card>
-      {showModal && <FeatureModal item={editing} onSave={handleSave} onClose={closeModal} />}
-    </div>
-  );
-};
-
-const FeatureModal = ({ item, onSave, onClose }) => {
-  const [formData, setFormData] = useState(item);
-  
-  return (
-    <Modal title="..." onClose={onClose} onSave={() => onSave(formData)}>
-      <FormField label="Name" value={formData.name} 
-        onChange={e => setFormData({...formData, name: e.target.value})} />
-    </Modal>
-  );
-};
-```
-
-## GUEST COMPONENT SPECIFICS
-
-**Guest Type**: 'single' or 'family'
-- Single: One person with all fields
-- Family: Head person + familyMembers array (each member has: id, name, familyRelation, phone, room, arrivalDate, departureDate, dietary, aadharCollected, transportNeeded)
-
-**Stats Calculation**:
-- totalIndividuals = sum of (1 + familyMembers.length) for families, 1 for singles
-- confirmedIndividuals = same calculation but only for rsvpStatus === 'yes'
-- vegCount/jainCount = count dietary preferences including family members
-- aadharCollected/roomsAssigned = count including family members
-- transportNeeded = count including family members
-
-**Table Display**: Shows head + nested rows for family members with smaller font (12px) and secondary color
-
-**Custom Fields**: savedGuestCategories, savedGuestRelations, savedDietaryPreferences, savedFamilyRelations - all managed via SelectOrAddField
-
-## BUDGET CATEGORY & PAYMENT RESPONSIBILITY SUPPORT
-
-**Components with Budget Category**: Vendors, Menus (events + items), Gifts (all types), Shopping (all items), Travel
-
-**Budget Category Field**: Optional dropdown in modals, displays as badge in tables
-
-**Budget Categories**: venue, catering, decor, bride, groom, pandit_and_rituals, entertainment, photography, invitations, gifts, transport, other
-
-**Payment Responsibility**: All budget-linked items support:
-- paymentResponsibility: 'bride' | 'groom' | 'split' (who should pay)
-- paidBy: 'bride' | 'groom' | 'split' | 'pending' (who actually paid)
-
-**Implementation Pattern**:
-```javascript
-const budgetCategories = budget?.map(b => ({
-  value: b.category,
-  label: b.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-})) || [];
-
-// In modal - Budget Category
-<select className="form-select" value={formData.budgetCategory || ''} onChange={e => setFormData({ ...formData, budgetCategory: e.target.value })}>
-  <option value="">Select category (optional)</option>
-  {budgetCategories.map(cat => (
-    <option key={cat.value} value={cat.value}>{cat.label}</option>
-  ))}
-</select>
-
-// In modal - Payment Responsibility
-<select className="form-select" value={formData.paymentResponsibility || ''} onChange={e => setFormData({ ...formData, paymentResponsibility: e.target.value })}>
-  <option value="">-- Select --</option>
-  <option value="bride">👰 Bride Side</option>
-  <option value="groom">🤵 Groom Side</option>
-  <option value="split">🤝 Split (Both)</option>
-</select>
-
-// In modal - Paid By
-<select className="form-select" value={formData.paidBy || 'pending'} onChange={e => setFormData({ ...formData, paidBy: e.target.value })}>
-  <option value="pending">Pending</option>
-  <option value="bride">👰 Bride Side</option>
-  <option value="groom">🤵 Groom Side</option>
-  <option value="split">🤝 Split (Both)</option>
-</select>
-
-// In table - Budget Category
-{item.budgetCategory ? (
-  <span className="badge badge-info">{item.budgetCategory.replace(/_/g, ' ')}</span>
-) : '-'}
-
-// In table - Payment Responsibility
-{item.paymentResponsibility ? (
-  <span className={`badge ${item.paymentResponsibility === 'bride' ? 'badge-info' : item.paymentResponsibility === 'groom' ? 'badge-success' : 'badge-warning'}`}>
-    {item.paymentResponsibility === 'bride' ? '👰 Bride' : item.paymentResponsibility === 'groom' ? '🤵 Groom' : '🤝 Split'}
-  </span>
-) : '-'}
-
-// In table - Paid By
-{item.paidBy && item.paidBy !== 'pending' ? (
-  <span className={`badge ${item.paidBy === 'bride' ? 'badge-info' : item.paidBy === 'groom' ? 'badge-success' : 'badge-warning'}`}>
-    {item.paidBy === 'bride' ? '👰 Bride' : item.paidBy === 'groom' ? '🤵 Groom' : '🤝 Split'}
-  </span>
-) : <span className="badge badge-error">Pending</span>}
-```
-
-## VENDOR COMPONENT SPECIFICS
-
-**40+ Default Vendor Types**: pandit_ji, decorator, caterer, dj, photographer, videographer, florist, mehendi_artist, makeup_artist, choreographer, band_baja, dhol_players, light_setup, wedding_planner, invitation_cards, transport, tent_house, sound_system, fireworks, stage_setup, varmala_setup, luxury_car_rental, astrologer, priest_assistant, havan_materials, mandap_decorator, horse_ghodi, baggi_decoration, sehra_bandi, kalash_decoration, coconut_supplier, paan_counter, live_counter_chef, ice_cream_counter, security_service, valet_parking, generator_rental, ac_cooler_rental, crockery_cutlery, linen_rental
-
-**Custom Vendor Types**: Saved to data.customVendorTypes array, persisted globally
-
-**Availability Slots**: Array of {from, fromTime, to, toTime} objects
-
-**Cost Tracking**: estimatedCost, finalCost, advancePaid
-
-**Budget Category**: Links to budget.category for tracking
-
-## TASK COMPONENT SPECIFICS
-
-**Categories**: vendor, preparation, shopping, transport, decoration, catering, general
-
-**Wedding Templates**: Pre-built tasks for North Indian weddings:
-- Book Pandit Ji for ceremonies (vendor, high)
-- Finalize Mehendi artist (vendor, high)
-- Order wedding cards (preparation, medium)
-- Book band baja for baraat (vendor, high)
-- Arrange horse/ghodi for groom (transport, medium)
-- Buy ritual items (kalash, coconut, etc.) (shopping, high)
-- Finalize mandap decoration (decoration, medium)
-- Confirm catering menu (catering, high)
-
-**Toggle Status**: Checkbox in table toggles between 'pending' and 'done'
-
-**Overdue Detection**: status === 'pending' && deadline && new Date(deadline) < new Date()
-
-## BUDGET COMPONENT SPECIFICS
-
-**12 Categories**: venue, catering, decor, bride, groom, pandit_and_rituals, entertainment, photography, invitations, gifts, transport, other
-
-**Subcategories**: Each category has subcategories array with {name, planned, actual}
-
-**Progress Calculation**: (actual / planned) * 100 for each category
-
-**Total Budget**: From weddingInfo.totalBudget
-
-**Bride/Groom Budgets**: Separate tracking via weddingInfo.brideBudget and weddingInfo.groomBudget
-
-**Budget Health**: totalActual vs totalBudget comparison
-
-**Auto-Calculation from Linked Items**: Budget automatically calculates expected and actual costs from:
-- Vendors: estimatedCost → expected, finalCost → actual
-- Menus: pricePerPlate × expectedGuests → expected, pricePerPlate × attendedGuests → actual
-- Gifts: totalCost → both expected and actual
-- Shopping: budget field → both expected and actual
-- Travel: totalPrice → both expected and actual
-
-**Payment Responsibility Tracking**: All linked items track paymentResponsibility (bride/groom/split) and paidBy (bride/groom/split/pending)
-
-**Side-Based Budget Calculation**: Automatically splits costs by bride/groom side based on paymentResponsibility:
-- bride: Full cost to bride side
-- groom: Full cost to groom side
-- split: 50% to each side
-
-**Expandable Categories**: Click category row to expand and view all linked items with their individual costs
-
-## APP.JS STRUCTURE
-
-```javascript
-const WeddingPlannerApp = () => {
-  const [data, setData] = useState(DEFAULT_DATA);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { notification, showNotification, closeNotification } = useNotification();
-
-  // Load data on mount
-  useEffect(() => { /* loadData() */ }, []);
-
-  // Save data on every change
-  useEffect(() => { /* saveData(data) */ }, [data, loading]);
-
-  const updateData = (key, value) => {
-    // Auto-calculate totalBudget when weddingInfo is updated
-    if (key === 'weddingInfo') {
-      value.totalBudget = (value.brideBudget || 0) + (value.groomBudget || 0);
-    }
-    setData({ ...data, [key]: value });
-  };
-
-  return (
-    <div>
-      <Header weddingInfo={data.weddingInfo} />
-      {error && <div className="error-banner">...</div>}
-      {notification && <Notification ... />}
-      <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main id="main-content" className="container">
-        {activeTab === 'dashboard' && <Dashboard data={data} />}
-        {activeTab === 'timeline' && <Timeline timeline={data.timeline} updateData={updateData} weddingDate={data.weddingInfo.weddingDate} />}
-        {activeTab === 'guests' && <Guests guests={data.guests} updateData={updateData} data={data} />}
-        {activeTab === 'vendors' && <Vendors vendors={data.vendors} updateData={updateData} budget={data.budget} />}
-        {activeTab === 'budget' && <Budget budget={data.budget} updateData={updateData} totalBudget={data.weddingInfo.totalBudget} allData={data} />}
-        {activeTab === 'tasks' && <Tasks tasks={data.tasks} updateData={updateData} />}
-        {activeTab === 'menus' && <Menus menus={data.menus} updateData={updateData} budget={data.budget} />}
-        {activeTab === 'shopping' && <Shopping shopping={data.shopping} updateData={updateData} budget={data.budget} />}
-        {activeTab === 'rituals' && <Rituals ritualsAndCustoms={data.ritualsAndCustoms} traditions={data.traditions} updateData={updateData} />}
-        {activeTab === 'gifts' && <Gifts giftsAndFavors={data.giftsAndFavors} updateData={updateData} budget={data.budget} />}
-        {activeTab === 'travel' && <Travel travel={data.travel} updateData={updateData} budget={data.budget} />}
-        {activeTab === 'settings' && <Settings weddingInfo={data.weddingInfo} updateData={updateData} allData={data} setData={setData} showNotification={showNotification} />}
-      </main>
-    </div>
-  );
-};
-```
-
-## ADDING NEW FEATURE - COMPLETE STEPS
-
-1. **Create component file**: `components/my-feature-components.js`
-```javascript
-const MyFeature = ({ myData, updateData }) => {
-  const { showModal, editing, handleAdd, handleEdit, handleSave, handleDelete, closeModal } 
-    = useCRUD(myData, updateData, 'myData', validator);
-  
-  return (
-    <Card title="My Feature" action={<button onClick={() => handleAdd({id: generateId(), ...})}>Add</button>}>
-      {/* content */}
-    </Card>
-  );
-};
-```
-
-2. **Add to index.html** (BEFORE app.js, AFTER shared-components-bundle.js):
-```html
-<script defer type="text/babel" src="/components/my-feature-components.js"></script>
-```
-
-3. **Add to DEFAULT_DATA** in utils.js:
-```javascript
-const DEFAULT_DATA = {
-  // ... existing
-  myData: []
-};
-```
-
-4. **Add validator** in utils.js (if needed):
-```javascript
-const validateMyData = (item) => {
-  const errors = {};
-  if (!item.name?.trim()) errors.name = 'Name required';
-  return Object.keys(errors).length ? errors : null;
-};
-```
-
-5. **Add tab** in tabs-component.js:
-```javascript
-{ id: 'myfeature', label: '🎯 My Feature', group: 'planning' }
-```
-
-6. **Add route** in app.js:
-```javascript
-{activeTab === 'myfeature' && <MyFeature myData={data.myData} updateData={updateData} />}
-```
-
-## CSS CLASSES REFERENCE
-
-**Layout**: container, card, card-title, flex-between, stats-grid, stat-card, stat-value, stat-label, quick-stats, quick-stat, quick-stat-value, quick-stat-label
-
-**Forms**: form-group, form-label, form-input, form-select, form-textarea, error-message
-
-**Buttons**: btn, btn-primary, btn-outline, btn-danger, btn-small
-
-**Tables**: table-container, table
-
-**Badges**: badge, badge-success, badge-error, badge-warning, badge-info, badge-small
-
-**Modals**: modal-overlay, modal, modal-header, modal-title, modal-close, modal-body, modal-footer
-
-**Notifications**: notification-banner, notification-success, notification-info
-
-**Progress**: progress-bar, progress-fill
-
-**Empty State**: empty-state, empty-state-icon
-
-**Accessibility**: skip-link (top: -100px, transform: translateY(-100%))
-
-## CSS VARIABLES
-
-```css
---color-primary: #4a90e2
---color-success: #27ae60
---color-warning: #f39c12
---color-error: #e74c3c
---color-info: #3498db
---color-bg: #ffffff
---color-bg-secondary: #f8f9fa
---color-text: #2c3e50
---color-text-secondary: #7f8c8d
---color-border: #dfe6e9
-```
-
-## COMMON PITFALLS
-
-1. **Script Order**: shared-components-bundle.js MUST load before feature components, app.js MUST be last
-2. **Notification Double Render**: Use useRef for timer in notification component, empty dependency array in useEffect
-3. **State Not Saving**: Always call updateData(key, value) with correct key matching DEFAULT_DATA
-4. **Validation Errors**: Return errors object or null, NOT throwing exceptions
-5. **Division by Zero**: Always check denominator > 0 before division in stats calculations
-6. **Date Validation**: Use isValidDate() before date operations
-7. **Family Members**: Remember to iterate familyMembers array for stats (dietary, aadhar, rooms, transport)
-8. **Custom Fields**: Use SelectOrAddField for categories/relations/types that can be extended
-9. **Modal State**: Use useCRUD hook, don't manage showModal/editing manually
-10. **Dietary Preferences**: ONLY 'veg' and 'jain' - no 'non_veg' option
-
-## PERFORMANCE OPTIMIZATIONS
-
-- Use useMemo for expensive calculations (stats, filtered lists)
-- Use useCallback for event handlers passed to child components
-- Batch state updates when possible
-- Avoid inline function definitions in render (use useCallback)
-- Keep component files under 500 lines (split into sub-components if needed)
-
-## ACCESSIBILITY REQUIREMENTS
-
-- All interactive elements have aria-labels
-- Skip link at top (hidden off-screen, visible on focus)
-- Keyboard navigation (Tab/Shift+Tab/Enter/Escape)
-- Color contrast 4.5:1 minimum
-- Touch targets 44x44px minimum
-- Screen reader compatible (NVDA, JAWS, VoiceOver, TalkBack)
-- Reduced motion support (prefers-reduced-motion)
-
-## TESTING CHECKLIST
-
-- [ ] Script loads in correct order
-- [ ] Data saves to localStorage on every change
-- [ ] Data loads correctly on page refresh
-- [ ] Validation prevents invalid data
-- [ ] Modal opens/closes correctly
-- [ ] CRUD operations work (add/edit/delete)
-- [ ] Filters work correctly
-- [ ] Stats calculate correctly (including edge cases like division by zero)
-- [ ] Notifications show and auto-dismiss
-- [ ] Keyboard navigation works
-- [ ] Mobile responsive
-- [ ] PWA installs and works offline
-
-## GIFTS COMPONENT SPECIFICS
-
-**Three Gift Categories**: Family Gifts, Return Gifts, Special Gifts
-
-**Analytics Tab**: Traditional North Indian guidelines (Shagun amounts, gold coins, dry fruits, silver items) and budget summary
-
-**Common Gifts by Category**:
-- Family: Shagun Envelope, Gold/Silver Coins, Jewelry Set, Saree/Suit, Sherwani/Kurta, Watch, Dry Fruits Box, Sweets Box, Coconut with Supari, Chunri with Shagun, Paan Supari Set
-- Return: Dry Fruits Box, Sweets Box, Decorative Diyas, Photo Frame, Scented Candles, Chocolate Box, Brass Items, Silver Plated Items, Personalized Mugs, Plant Saplings, Eco-friendly Bags
-- Special: Gold Jewelry, Diamond Jewelry, Luxury Watch, Designer Saree, Designer Sherwani, Car, Property Documents, Cash/Cheque, Electronics, Furniture, Home Appliances
-
-**Custom Events**: Uses customGiftEvents array for user-defined events beyond default North Indian ceremonies
-
-**Auto-Calculation**: totalCost = quantity × pricePerGift
-
-## SHOPPING COMPONENT SPECIFICS
-
-**Three Categories**: Bride, Groom, Family - each with multiple events
-
-**Shopping Templates**: Pre-built shopping lists by event:
-- Bride: Mehendi (Lehenga, Jewelry), Sangeet (Outfit, Dancing Shoes), Wedding (Bridal Lehenga, Jewelry Set), Reception (Gown/Saree, Jewelry)
-- Groom: Sangeet (Kurta, Mojaris), Wedding (Sherwani, Sehra, Kalgi), Reception (Suit)
-- Family: General (Coordination Outfits, Gift Wrapping Supplies)
-
-**Status Tracking**: pending → ordered → received → completed
-
-## TRAVEL COMPONENT SPECIFICS
-
-**Vehicle Types**: bus, car, van, tempo_traveller, luxury_coach, suv, sedan
-
-**Travel Templates**: Common transport options (AC Bus for Baraat, Luxury Coach, Tempo Traveller) with one-click addition
-
-**Stats Displayed**: Total Cost, Total Distance (km), Total Vehicles, Total Seats, Cost per KM, Cost per Seat
-
-**Driver Information**: driverName, driverContact fields for each vehicle
-
-**Route Planning**: route field for pickup/drop locations
-
-## VERSION HISTORY
-
-**v2.5.0**: Auto-budget calculation (totalBudget = brideBudget + groomBudget), gift analytics tab with traditional guidelines, shopping templates by event, travel templates with common options, enhanced gift/travel data structure
-**v2.4.0**: Payment responsibility tracking (bride/groom/split) for vendors, menus, gifts, shopping, travel; bride/groom budget tracking; budget auto-calculation from linked items; menu item editing with payment tracking
-**v2.3.0**: Budget category support for menus (events + items), gifts (all types), shopping (all items), travel; menu item editing
-**v2.2.0**: Dietary simplified to veg/jain only, notification system with auto-dismiss, guest table improvements, skip link fix
-**v2.1.0**: Service worker cache fix, enhanced validators, division-by-zero guards, async storage improvements
-**v2.0.0**: Security (sanitization, encryption, CSP), accessibility (WCAG 2.1 AA), keyboard navigation
-**v1.0.0**: Initial release with core features
+**A comprehensive technical reference for AI assistants. This document contains all critical patterns, data structures, and implementation details for efficient code generation and modification.**
 
 ---
 
-**USE THIS DOCUMENT AS PRIMARY REFERENCE - Contains all patterns, data structures, and implementation details needed for efficient code generation and modification.**
+## 1. 🚀 Core Principles & Constraints
+
+**These are the most important rules. Do not violate them.**
+
+*   **🚫 NO BUILD SYSTEM**: This is a browser-first PWA. It runs without a build system (no webpack/vite/npm build).
+    *   React 18.2.0 and Babel 7.23.2 are loaded via CDN.
+    *   All scripts use `<script type="text/babel">` for in-browser JSX transpilation.
+*   **💾 State Management**: A single JSON-like object (`data`) in `app.js` is the entire app state.
+    *   It's persisted to `localStorage` via `window.storageManager`.
+    *   State updates **must** use the `updateData(key, value)` function passed down from `app.js`. This function handles state changes and triggers auto-save.
+    *   Always update a top-level key from `DEFAULT_DATA` (e.g., `guests`, `vendors`, `budget`).
+*   **🔒 Security is Mandatory**:
+    *   All user input must be sanitized via `window.securityUtils.sanitizeInput()` or `sanitizeObject()` from `utils/security.js` before storing or rendering.
+    *   Encrypt sensitive fields (phone, aadhar, email) using `window.securityUtils.encryptText()` and decrypt with `decryptText()`. The `encryptGuestData` and `decryptGuestData` helpers are available for guest objects.
+*   **📜 Script Load Order is CRITICAL**: The order in `index.html` is fundamental to the app's operation. Do not change it without a very specific reason and migration plan. `app.js` must always be last. See `index.html` for the exact order.
+
+---
+
+## 2. 🗺️ Where to Find What: Key Files
+
+*   **Main Application Logic**: `app.js` (state management, routing, component composition).
+*   **Core Data Structures & Utilities**: `utils.js` (contains `DEFAULT_DATA`, validators, formatters).
+*   **Storage Interface**: `storage.js` (defines `window.storageManager` for `localStorage` access).
+*   **Security Functions**: `utils/security.js` (defines `window.securityUtils` for sanitization, encryption, validation).
+*   **Shared UI & Hooks**: `components/shared-components-bundle.js` (contains reusable components like `Modal`, `FormField`, and hooks like `useCRUD`, `useFilter`). **Always reuse these.**
+*   **PWA Logic**: `pwa.js` (registers service worker), `service-worker.js` (caching strategy), `manifest.json`.
+
+---
+
+## 3. 📝 Common Tasks & Procedures
+
+### Adding a New Feature Component
+
+1.  **Create File**: Create `components/my-feature-components.js`. Use the standard component pattern with the `useCRUD` hook.
+2.  **Add to `index.html`**: Add `<script defer type="text/babel" src="/components/my-feature-components.js"></script>` **after** `shared-components-bundle.js` and **before** `app.js`.
+3.  **Update Data Structure**: If a new top-level data key is needed, add it to `DEFAULT_DATA` in `utils.js`.
+4.  **Add Validator**: If needed, add a validation function in `utils.js` and pass it to the `useCRUD` hook.
+5.  **Add Tab**: Add a new tab object to the `TABS` array in `components/tabs-component.js`.
+6.  **Add to `app.js`**: Conditionally render your new component in `app.js` based on `activeTab`.
+
+### Reading and Updating Data
+
+*   **Always use `updateData('key', newArrayOrObject)` to persist changes.** This is passed as a prop from `app.js`.
+*   The `updateData` function in `app.js` automatically handles saving the entire data object to `localStorage`.
+*   Directly calling `window.storageManager.saveData()` should be avoided unless for bulk operations outside the standard component flow.
+
+---
+
+## 4. 🧱 Patterns & Conventions
+
+### Standard Component Pattern
+
+```javascript
+// In components/feature-components.js
+const FeatureName = ({ data, updateData }) => {
+  // 1. CRUD hook for modal and data operations
+  const { showModal, editing, handleAdd, handleEdit, handleSave, handleDelete, closeModal }
+    = useCRUD(data, updateData, 'dataKey', validatorFn);
+
+  // 2. Render UI
+  return (
+    <Card title="Feature" action={<button onClick={() => handleAdd({...template})}>Add</button>}>
+      {/* ... list/table of items ... */}
+    </Card>
+    {showModal && (
+      <FeatureModal
+        item={editing}
+        onSave={handleSave}
+        onClose={closeModal}
+      />
+    )}
+  );
+};
+```
+
+### Shared Components & Hooks (from `shared-components-bundle.js`)
+
+**MUST USE THESE. DO NOT RECREATE.**
+
+*   **UI Components**: `Modal`, `FormField`, `Badge`, `ProgressRing`, `QuickStats`, `EmptyState`, `Card`, `ActionButtons`, `SelectOrAddField`.
+*   **Hooks**:
+    *   `useCRUD(items, updateData, 'dataKey', validatorFn)`: Manages modal state and CRUD logic.
+    *   `useFilter(items, filterFn)`: Manages client-side filtering.
+    *   `useNotification()`: Provides `showNotification` function to display toast-like messages.
+
+### Domain Rules
+
+*   **Dietary Options**: Values are strictly `"veg"` or `"jain"`. No `"non-veg"`.
+*   **Payment Fields**: `paymentResponsibility` must be one of `"bride"|"groom"|"split"`. `paidBy` can also be `"pending"`.
+*   **Guest Types**: `type` is `"single"` or `"family"`. Family entries have a `familyMembers` array. Guest counts must iterate through this array.
+
+---
+
+## 5. 🧬 Complete Data Structure
+
+This is the shape of the main `data` object, defined as `DEFAULT_DATA` in `utils.js`.
+
+```javascript
+{
+  weddingInfo: { /* ... */ },
+  savedGuestCategories: [],
+  // ... (the full structure from the original file)
+  guests: [
+    {
+      id, type: 'single'|'family', name, category, side: 'bride'|'groom',
+      // ... guest fields
+      familyMembers: [
+        { id, name, /* ... member fields */ }
+      ]
+    }
+  ],
+  vendors: [ /* ... */ ],
+  budget: [ /* ... */ ],
+  tasks: [ /* ... */ ],
+  // ... other top-level keys
+}
+```
+*(The full data structure is omitted here for brevity but should be referenced from `utils.js`)*
+
+---
+
+## 6. 💡 Common Pitfalls & How to Avoid Them
+
+1.  **Script Order Errors**: Double-check `index.html` script order. `shared-components-bundle.js` before features, `app.js` last.
+2.  **State Not Saving**: Ensure you are calling `updateData` with the correct top-level key.
+3.  **Validation Errors**: Validators in `utils.js` should return an `errors` object or `null`, not throw exceptions.
+4.  **Division by Zero**: When calculating stats (e.g., percentages), always check for a non-zero denominator.
+5.  **Guest Counts**: Remember to iterate through `familyMembers` arrays when calculating total guest counts, dietary needs, etc.
